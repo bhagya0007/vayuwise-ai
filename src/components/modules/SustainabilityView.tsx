@@ -14,7 +14,6 @@ import {
   AiDisclosureNote,
   AiErrorRecoveryCard,
   AiProvenanceBadge,
-  ContextMetaStrip,
   WhyRecommendationToggle,
   type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
@@ -32,7 +31,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -209,23 +207,18 @@ export function SustainabilityView() {
   };
 
   return (
-    <div className="space-y-6">
-      <AiDisclosureNote />
-      <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
-
+    <div className="space-y-4">
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <CardTitle className="text-2xl font-semibold">
-                {locale === "hi"
-                  ? "AI टिकाऊ जीवनशैली केंद्र"
-                  : "AI Sustainability Hub"}
-              </CardTitle>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                {locale === "hi" ? "हरित जीवन विकल्प" : "Green Choices"}
+              </h1>
               <CardDescription>
                 {locale === "hi"
-                  ? `${selectedLocation.name} की वायु गुणवत्ता और आपके बजट के अनुसार सुरक्षित विकल्प। सटीक CO₂e गणित प्रभाव कैलकुलेटर में देखें।`
-                  : `Health-aware sustainable swaps tailored to ${selectedLocation.name} AQI and your budget. Compute verified CO₂e savings in the Impact Calculator.`}
+                  ? `${selectedLocation.name} के AQI के अनुसार सुरक्षित कम-उत्सर्जन विकल्प।`
+                  : `Health-aware low-emission swaps suited to ${selectedLocation.name} AQI.`}
               </CardDescription>
             </div>
             <Button
@@ -243,59 +236,71 @@ export function SustainabilityView() {
           </div>
         </CardHeader>
 
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="sus-focus-select">
-              {locale === "hi" ? "मुख्य क्षेत्र" : "Focus Area"}
-            </Label>
-            <select
-              id="sus-focus-select"
-              value={focusArea}
-              onChange={(e) => setFocusArea(e.target.value as typeof focusArea)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="all">
-                {locale === "hi" ? "सभी श्रेणियाँ" : "All Categories"}
-              </option>
-              <option value="daily_commute">
-                {locale === "hi" ? "दैनिक यात्रा" : "Daily Commuting"}
-              </option>
-              <option value="school_college_travel">
-                {locale === "hi" ? "स्कूल व कॉलेज यात्रा" : "School & College Travel"}
-              </option>
-              <option value="household_energy">
-                {locale === "hi" ? "घरेलू ऊर्जा" : "Household Energy"}
-              </option>
-              <option value="waste_practices">
-                {locale === "hi" ? "कचरा व दहन रोकथाम" : "Waste Practices"}
-              </option>
-              <option value="community_sustainability">
-                {locale === "hi" ? "सामुदायिक पहल" : "Community Sustainability"}
-              </option>
-            </select>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="sus-focus-select" className="text-xs">
+                {locale === "hi" ? "मुख्य क्षेत्र" : "Focus Area"}
+              </Label>
+              <select
+                id="sus-focus-select"
+                value={focusArea}
+                onChange={(e) => setFocusArea(e.target.value as typeof focusArea)}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="all">
+                  {locale === "hi" ? "सभी श्रेणियाँ" : "All Categories"}
+                </option>
+                <option value="daily_commute">
+                  {locale === "hi" ? "दैनिक यात्रा" : "Daily Commuting"}
+                </option>
+                <option value="school_college_travel">
+                  {locale === "hi" ? "स्कूल व कॉलेज यात्रा" : "School & College Travel"}
+                </option>
+                <option value="household_energy">
+                  {locale === "hi" ? "घरेलू ऊर्जा" : "Household Energy"}
+                </option>
+                <option value="waste_practices">
+                  {locale === "hi" ? "कचरा व दहन रोकथाम" : "Waste Practices"}
+                </option>
+                <option value="community_sustainability">
+                  {locale === "hi" ? "सामुदायिक पहल" : "Community Sustainability"}
+                </option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="sus-budget-select" className="text-xs">
+                {locale === "hi" ? "बजट स्तर" : "Budget"}
+              </Label>
+              <select
+                id="sus-budget-select"
+                value={budgetTier}
+                onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="free">
+                  {locale === "hi" ? "शून्य-खर्च उपाय" : "Zero-Cost Actions"}
+                </option>
+                <option value="low_cost">
+                  {locale === "hi" ? "कम-खर्च विकल्प" : "Low-Cost Swaps"}
+                </option>
+                <option value="investment">
+                  {locale === "hi" ? "निवेश स्तर" : "Investment Tier"}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="sus-budget-select">
-              {locale === "hi" ? "बजट स्तर" : "Budget Tier"}
-            </Label>
-            <select
-              id="sus-budget-select"
-              value={budgetTier}
-              onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="free">
-                {locale === "hi" ? "शून्य-खर्च उपाय" : "Zero-Cost Actions"}
-              </option>
-              <option value="low_cost">
-                {locale === "hi" ? "कम-खर्च विकल्प" : "Low-Cost Swaps"}
-              </option>
-              <option value="investment">
-                {locale === "hi" ? "निवेश स्तर" : "Investment Tier"}
-              </option>
-            </select>
-          </div>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none font-medium text-foreground/80">
+              {locale === "hi" ? "AI गोपनीयता और प्रोफ़ाइल संदर्भ" : "AI privacy & profile context"}
+            </summary>
+            <div className="mt-2 space-y-2">
+              <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
+              <AiDisclosureNote />
+            </div>
+          </details>
         </CardContent>
       </Card>
 
@@ -320,21 +325,20 @@ export function SustainabilityView() {
         <Skeleton className="h-60 w-full rounded-2xl" />
       ) : data ? (
         <div className="space-y-5">
-          <div className="space-y-2.5 rounded-2xl border border-border bg-card p-4">
+          <div className="space-y-2 rounded-2xl border border-border bg-card p-4">
             <AiProvenanceBadge
               aiGenerated={aiGenerated}
               provenanceMode={provenanceMode}
               modelUsed={modelUsed}
             />
-            <h2 className="text-lg font-semibold">{data.headline}</h2>
-            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+            <h2 className="text-base font-semibold sm:text-lg">{data.headline}</h2>
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs">
               <ShieldAlert
                 className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
                 aria-hidden="true"
               />
               <p>{data.healthPriorityNote}</p>
             </div>
-            {contextMeta ? <ContextMetaStrip meta={contextMeta} /> : null}
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -403,32 +407,42 @@ export function SustainabilityView() {
                   <CardContent className="space-y-3 text-xs">
                     {detPreview && detPreview.avoidedAnnualKgCo2e > 0 ? (
                       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-medium text-emerald-800 dark:text-emerald-300">
-                        Deterministic Est.: ~{detPreview.avoidedAnnualKgCo2e.toFixed(1)} kg CO₂e/yr avoided ({profile.dailyCommuteKm} km/day)
+                        {locale === "hi" ? "अनुमानित लाभ:" : "Estimated benefit:"} ~
+                        {detPreview.avoidedAnnualKgCo2e.toFixed(1)} kg CO₂e/yr avoided ({profile.dailyCommuteKm} km/day)
                       </div>
-                    ) : null}
+                    ) : (
+                      <p className="text-foreground/90">
+                        <span className="font-medium">
+                          {locale === "hi" ? "अनुमानित लाभ:" : "Estimated benefit:"}
+                        </span>{" "}
+                        {alt.qualitativeEnvironmentalBenefit}
+                      </p>
+                    )}
 
-                    <p className="text-foreground/90">
-                      <span className="font-medium">
-                        {locale === "hi" ? "पर्यावरणीय लाभ:" : "Environmental Benefit:"}
-                      </span>{" "}
-                      {alt.qualitativeEnvironmentalBenefit}
-                    </p>
-                    <p className="text-muted-foreground">
-                      <span className="font-medium text-foreground">
-                        {locale === "hi" ? "स्वास्थ्य व व्यावहारिक पहलू:" : "Health & Trade-Off:"}
-                      </span>{" "}
-                      {alt.healthAndPracticalTradeOff}
-                    </p>
+                    <details className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-muted-foreground">
+                      <summary className="cursor-pointer select-none font-medium text-foreground/85">
+                        {locale === "hi" ? "व्यावहारिक पहलू और विधि" : "Trade-offs & Methodology"}
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        <p>{alt.qualitativeEnvironmentalBenefit}</p>
+                        <p>
+                          <span className="font-medium text-foreground">
+                            {locale === "hi" ? "स्वास्थ्य पहलू:" : "Trade-off:"}
+                          </span>{" "}
+                          {alt.healthAndPracticalTradeOff}
+                        </p>
+                        <WhyRecommendationToggle
+                          explanation={alt.whyThisRecommendation}
+                          contextMeta={contextMeta ?? undefined}
+                          dataBasis={data.dataBasis}
+                          sourceIds={alt.sourceIds}
+                          citations={citations}
+                          limitation={data.disclaimer}
+                        />
+                      </div>
+                    </details>
 
-                    <WhyRecommendationToggle
-                      explanation={alt.whyThisRecommendation}
-                      dataBasis={data.dataBasis}
-                      sourceIds={alt.sourceIds}
-                      citations={citations}
-                      limitation={data.disclaimer}
-                    />
-
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <div className="flex flex-wrap items-center gap-2 pt-0.5">
                       {isCommute ? (
                         <Link
                           href={`/impact?baseline=${effectiveBaseMode}&alternative=${inferredAlt}&distance=${profile.dailyCommuteKm}`}

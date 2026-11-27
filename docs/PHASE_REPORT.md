@@ -410,3 +410,85 @@ Executed **11** live HTTP `POST` requests against the built production server (`
    - In Vercel **Firewall -> Configure -> + New Rule**, match `Request Path Starts With /api/ai/`, set Action = `Rate Limit` (`Fixed Window`, `60s`, e.g. `15` requests/IP), Save & Publish.
 4. **Post-Deploy Verification & Challenge Submission:**
    - Open your live URL -> verify `/api/health`, `/dashboard`, `/assistant`, `/impact`, `/report`, and submit the verified repository and URL before **29 November 2026, 11:59 PM IST**.
+
+---
+
+## Final Post-Deployment Polish (Live Production & Copy Release Correction)
+
+- **Status:** Prepared for Owner Commit & Push (Uncommitted Diff Ready)
+- **Date:** 2026-11-27
+- **Live URLs Verified:**
+  - GitHub: [https://github.com/bhagya0007/vayuwise-ai](https://github.com/bhagya0007/vayuwise-ai)
+  - Production: [https://vayuwise-ai-one.vercel.app/](https://vayuwise-ai-one.vercel.app/)
+
+### 1. Copy & Attribution Corrections Completed
+- **Removed Outdated Planned/Upcoming Copy ([dictionary.ts](file:///e:/VayuWise-AI/src/lib/i18n/dictionary.ts)):**
+  - Updated English & Hindi landing feature descriptions (`landing.features.description`), feature tags/descriptions (`AI Daily Planning` -> `"Gemini AI + Safety"`, `Environmental Impact` -> `"Audited CO₂e Math"`), trust pillar (`"Live Gemini calls execute strictly server-side..."`), final CTA copy, and landing footers (replaced `"Planned AI: Google Gemini."` / `"नियोजित AI: Google Gemini।"` with `"AI Engine: Google Gemini."` / `"AI इंजन: Google Gemini।"`).
+  - Scanned `src/` confirming zero remaining `"Planned AI"`, `"Planned Gemini"`, or `"upcoming phases"` placeholders across user-facing pages while keeping all modeled-data, free-tier privacy, and non-medical disclaimers intact.
+- **Updated [README.md](file:///e:/VayuWise-AI/README.md):** Added direct links to the live production Vercel deployment and GitHub repository.
+- **Test Stability Improvements ([phase03.test.ts](file:///e:/VayuWise-AI/tests/unit/phase03.test.ts), [phase05_07.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase05_07.spec.ts), [phase08.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase08.spec.ts)):** Added deterministic modeled `getForecast` / `/api/air-quality` mocks so automated tests remain immune to transient upstream weather timeouts.
+
+### 2. Live Production & Automated Verification Results
+- **Live Vercel Production Check (`https://vayuwise-ai-one.vercel.app/`):**
+  - `GET /api/health` (`200`): `{"status":"ok","app":"VayuWise AI","geminiConfigured":true,"aiEnabled":true,"geminiModel":"gemini-3.1-flash-lite","release":"release-candidate"}`
+  - `GET /api/air-quality` (`200`): `ok: true`, `usAqi: 215`, `dominant: "pm25"`, `hours: 48`, `source: "modeled"`
+  - `POST /api/ai/chat` (`200`): `ok: true`, `aiGenerated: true`, `provenanceMode: "gemini"`, `modelUsed: "gemini-3.1-flash-lite"`
+- **Local Verification After Final Code/Test Edits:**
+  - `npm run typecheck`: `0` errors
+  - `npm run lint`: `0` errors, `0` warnings
+  - `npm run test`: **79 passed** across **9 files** (`2.33s`)
+  - `npm run build`: Passed (**25** App Router routes)
+  - `npm run test:e2e`: **23 passed** across **7 files** (`9.0s`)
+- **Credential & Git Exclusion Audit:** `GIT_CHECK: private_env=0 real_key_in_tree=False`; `.env.local` remains excluded via `.gitignore`.
+
+### MANUAL TASKS REQUIRED FROM PROJECT OWNER (Post-Deployment Polish)
+1. **Commit & Push Final Polish Changes to GitHub (Triggers Vercel Auto-Redeploy):**
+   ```bash
+   git add README.md src/lib/i18n/dictionary.ts docs/PHASE_REPORT.md tests/unit/phase03.test.ts tests/e2e/phase05_07.spec.ts tests/e2e/phase08.spec.ts
+   git commit -m "chore: final post-deployment copy polish and live URL docs"
+   git push origin main
+   ```
+2. **Confirm Vercel Redeploy & Submit:** Wait for Vercel to finish deploying the new commit to `https://vayuwise-ai-one.vercel.app/`, verify the updated landing page footer (`AI Engine: Google Gemini.`), and submit your Challenge 6 entry. *(No missing env blockers remain — production `/api/health`, Open-Meteo 48h feed, and Gemini `gemini-3.1-flash-lite` are already live and healthy.)*
+
+---
+
+## Final Phase — UX Simplification, Minimalism & User Experience Optimization
+
+- **Status:** Completed (Verified Locally & Prepared for Owner Commit/Push)
+- **Date:** 2026-11-27
+- **Targets:** GitHub [https://github.com/bhagya0007/vayuwise-ai](https://github.com/bhagya0007/vayuwise-ai) · Production [https://vayuwise-ai-one.vercel.app/](https://vayuwise-ai-one.vercel.app/)
+
+### 1. Consumer-Focused Simplification & Progressive Disclosure
+- **Concise Gemini Directives ([prompts.ts](file:///e:/VayuWise-AI/src/lib/ai/prompts.ts)):** Updated `getVayuSystemInstruction` to prioritize plain everyday language, direct first-line answers, and 3–5 concise actionable steps (1–2 sentences each) while preserving every safety guardrail, uncertainty note, and verified source rule.
+- **Streamlined 5-Section Landing Page ([LandingPage.tsx](file:///e:/VayuWise-AI/src/components/landing/LandingPage.tsx), [dictionary.ts](file:///e:/VayuWise-AI/src/lib/i18n/dictionary.ts), [HeroVisualization.tsx](file:///e:/VayuWise-AI/src/components/landing/HeroVisualization.tsx)):** Consolidated into Hero (`Get Started` + `Explore Features`), 6 single-sentence feature cards, 3-step `How It Works`, compact Trust + collapsed `<details>` `Methodology & Data Sources`, and Final CTA + clean Footer in both EN and HI.
+- **Intuitive Navigation ([WorkspaceShell.tsx](file:///e:/VayuWise-AI/src/components/layout/WorkspaceShell.tsx)):** Organized desktop sidebar into `TODAY` (`Overview`, `Daily Plan`, `Ask Vayu AI`), `TAKE ACTION` (`Home Air`, `Green Choices`, `My Impact`, `Community`), and `ACCOUNT & TOOLS` (`Family Profile`, `Printable Report`, `Settings`), paired with a fixed 5-item mobile bottom navigation bar (`Home`, `Plan`, `AI`, `Impact`, `More`) with proper bottom padding on `<main>`.
+- **Scannable Dashboard ([DashboardView.tsx](file:///e:/VayuWise-AI/src/components/dashboard/DashboardView.tsx)):** Kept above-fold view focused on location, live modeled US AQI gauge + CPCB note, Top Recommendation + top 3 actionable guidance bullets, and **4 primary quick actions** (`Plan my day`, `Improve home air`, `Find green choices`, `Calculate my impact`); tucked model timestamps, all 6 pollutant sparkline cards, secondary insights, and source links cleanly into native `<details>` accordions.
+- **Minimalist AI Assistant & Core Modules:**
+  - [AssistantView.tsx](file:///e:/VayuWise-AI/src/components/assistant/AssistantView.tsx) & [AiTransparencyWidgets.tsx](file:///e:/VayuWise-AI/src/components/ai/AiTransparencyWidgets.tsx): Consolidated `ContextMetaStrip` inside `"Why this recommendation?"`, adjusted mobile viewport height (`h-[calc(100dvh-11rem)] lg:h-[calc(100dvh-7.5rem)]`) so the sticky composer sits cleanly above the mobile bottom bar, and tightened mobile header actions.
+  - [PlannerView.tsx](file:///e:/VayuWise-AI/src/components/modules/PlannerView.tsx), [IndoorAirView.tsx](file:///e:/VayuWise-AI/src/components/modules/IndoorAirView.tsx), [SustainabilityView.tsx](file:///e:/VayuWise-AI/src/components/modules/SustainabilityView.tsx): Replaced multi-box walls of text with compact chronological rows + `"Details & alternatives"`, `"Improve your home's air"` + `"What you can do today"` + top 3 room cards + `"Things to avoid"`, and Before -> After swaps with `"Estimated benefit"` + collapsible `"Trade-offs & Methodology"`.
+  - [ImpactView.tsx](file:///e:/VayuWise-AI/src/components/modules/ImpactView.tsx), [phase04-dictionary.ts](file:///e:/VayuWise-AI/src/lib/i18n/phase04-dictionary.ts), [CommunityView.tsx](file:///e:/VayuWise-AI/src/components/modules/CommunityView.tsx), [ProfileView.tsx](file:///e:/VayuWise-AI/src/components/profile/ProfileView.tsx): Renamed `/impact` to `"Your Environmental Impact"` / `"Compare Your Travel Choices"` with a clean 2-tab switcher (`Travel CO₂e Impact` vs. `Outdoor Exposure Comparison`), 4 essential inputs upfront + `Advanced Settings` accordion, closed-by-default `"How We Calculate This"`, clean **Today / This Week / This Month** Community rollout columns, and `Advanced Preferences` grouping on Profile.
+
+### 2. Two-Pass Visual UX Inspection & Fixes
+- **Pass 1 (`1440x900` Dark/Light & `360x800` Mobile):** Inspected rendered Chromium screenshots across all 9 routes (`desktop-dark`, `desktop-light`, `mobile-dark`). Identified an empty vertical gap inside the Dashboard guidance hero card (`justify-between`), a subtle label wrap on the Hero `"Illustrative US AQI"` pill, duplicate mobile header wrapping on `/assistant`, overlapping `aria-label` overrides on mobile bottom-nav links, and 7 unused-import lint warnings.
+- **Pass 2 Verification:** Removed `justify-between` spacing void by placing the Top 3 priority bullets inside the Dashboard guidance card, fixed mobile bottom-nav accessible names (`Home`, `Plan`, `AI`, `Impact`, `More`), condensed mobile assistant header controls, cleaned all 7 lint warnings (`0` errors, `0` warnings), and re-verified screenshots (`0` horizontal overflow across every tested desktop/mobile viewport, sticky composer positioned cleanly above mobile bottom nav, `0` console/page errors).
+
+### 3. Final Verification, Live Checks & Repo Readiness
+- `npm run typecheck`: Passed (`0` errors)
+- `npm run lint`: Passed (`0` errors, `0` warnings)
+- `npm run test`: **79 passed** across **9 files**
+- `npm run build`: Passed (**25** App Router routes compiled cleanly)
+- `npm run test:e2e`: **28 passed** across **8 files** (including 5 new UX simplification checks in [phase09_ux.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase09_ux.spec.ts))
+- **Live Server Verification (`npm run start` on port `3055`):**
+  - `/api/air-quality` (`New Delhi`): `ok: true`, `usAqi: 216`, **`48` forecast hours**, `Open-Meteo / CAMS`
+  - `/api/ai/chat`: `ok: true`, `aiGenerated: true`, `provenanceMode: "gemini_safety_adjusted"`, `modelUsed: "gemini-3.1-flash-lite"`, `3` concise recommendations
+- **Git & Repository Size Check:** `131` Git-eligible files totaling `1,436,300` bytes (~`1.37 MB`), well within the `10 MB` limit; `0` tracked `.env.local` files.
+
+### MANUAL TASKS REQUIRED FROM PROJECT OWNER
+1. **Review & Push Simplified UI Release to GitHub (Triggers Vercel Redeploy):**
+   ```bash
+   git status
+   git add -A
+   git commit -m "feat: simplify consumer UX, navigation and progressive disclosure"
+   git push origin main
+   ```
+2. **Confirm Updated Production Deployment:** Verify [https://vayuwise-ai-one.vercel.app/](https://vayuwise-ai-one.vercel.app/) updates to the simplified UX after Vercel finishes building `main`.

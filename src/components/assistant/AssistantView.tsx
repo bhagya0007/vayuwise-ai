@@ -25,7 +25,6 @@ import {
   AiDisclosureNote,
   AiErrorRecoveryCard,
   AiProvenanceBadge,
-  ContextMetaStrip,
   WhyRecommendationToggle,
   type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
@@ -349,7 +348,7 @@ export function AssistantView() {
     [...messages].reverse().find((m) => m.role === "assistant")?.id ?? null;
 
   return (
-    <div className="flex h-[calc(100dvh-7.5rem)] min-h-[520px] flex-col gap-3">
+    <div className="flex h-[calc(100dvh-11rem)] min-h-[460px] flex-col gap-3 lg:h-[calc(100dvh-7.5rem)]">
       {/* Compact Conversation-First Header */}
       <div className="shrink-0 rounded-2xl border border-border/80 bg-card px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2.5">
@@ -402,7 +401,7 @@ export function AssistantView() {
               className="gap-1 text-xs"
             >
               <Plus className="size-3.5" aria-hidden="true" />
-              <span>{locale === "hi" ? "नई चैट" : "New Chat"}</span>
+              <span>{locale === "hi" ? "नई चैट" : "New"}</span>
             </Button>
 
             <Button
@@ -556,24 +555,21 @@ export function AssistantView() {
 
                   {msg.structured?.recommendations &&
                   msg.structured.recommendations.length > 0 ? (
-                    <div className="space-y-2">
-                      {msg.structured.recommendations.map((rec) => (
+                    <div className="space-y-1.5">
+                      {msg.structured.recommendations.slice(0, 5).map((rec) => (
                         <div
                           key={rec.id}
-                          className="space-y-1 rounded-xl border border-border bg-background/70 p-3 text-xs"
+                          className="rounded-xl border border-border/80 bg-background/70 px-3 py-2 text-xs"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-1.5">
                             <span className="font-semibold text-foreground">
                               {rec.title}
                             </span>
-                            <Badge variant="outline" className="text-[10px]">
-                              {rec.relativeCost.replace("_", " ")}
-                            </Badge>
+                            <span className="text-[11px] text-muted-foreground">
+                              {rec.suggestedTiming} · {rec.relativeCost.replace("_", " ")}
+                            </span>
                           </div>
-                          <p className="text-foreground/90">{rec.suggestedAction}</p>
-                          <p className="text-muted-foreground">
-                            Timing: {rec.suggestedTiming} · Alt: {rec.practicalAlternative}
-                          </p>
+                          <p className="mt-0.5 text-foreground/90">{rec.suggestedAction}</p>
                         </div>
                       ))}
                     </div>
@@ -587,13 +583,10 @@ export function AssistantView() {
                     </div>
                   ) : null}
 
-                  {msg.contextMeta ? (
-                    <ContextMetaStrip meta={msg.contextMeta} />
-                  ) : null}
-
                   {msg.structured ? (
                     <WhyRecommendationToggle
                       explanation={msg.structured.whyThisRecommendation}
+                      contextMeta={msg.contextMeta}
                       dataBasis={msg.structured.dataBasis}
                       sourceIds={msg.structured.sourceIds}
                       citations={msg.citations}

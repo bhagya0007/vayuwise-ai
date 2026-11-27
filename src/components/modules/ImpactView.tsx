@@ -181,6 +181,7 @@ export function ImpactView() {
 
   const [altOccupancy, setAltOccupancy] = useState<number>(3);
   const [horizon, setHorizon] = useState<"daily" | "weekly" | "monthly" | "annual">("annual");
+  const [activeTab, setActiveTab] = useState<"travel" | "exposure">("travel");
   const [showMethodology, setShowMethodology] = useState(false);
 
   // Live Air Quality fetch for separate concentration-time comparison card
@@ -517,276 +518,306 @@ export function ImpactView() {
         </div>
       </div>
 
-      {/* What-If Quick Presets */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-xs font-medium text-muted-foreground">
-          {dict.scenarioPresetsTitle}:
-        </span>
-        <Button
+      {/* Clean Secondary Tab Switcher: Travel Impact vs Outdoor Exposure */}
+      <div
+        role="tablist"
+        aria-label={locale === "hi" ? "प्रभाव अनुभाग" : "Impact sections"}
+        className="inline-flex rounded-xl border border-border bg-card p-1 text-xs"
+      >
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            applyPreset({
-              base: "car_petrol",
-              alt: "metro_rail",
-              baseDays: 5,
-              altDays: 5,
-              baseOcc: 1,
-            })
-          }
+          role="tab"
+          aria-selected={activeTab === "travel"}
+          onClick={() => setActiveTab("travel")}
+          className={`rounded-lg px-3.5 py-1.5 font-medium transition-colors ${
+            activeTab === "travel"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          {locale === "hi" ? "पेट्रोल कार बनाम मेट्रो" : "Petrol Car vs Metro"}
-        </Button>
-        <Button
+          {locale === "hi" ? "यात्रा CO₂e तुलना" : "Travel CO₂e Impact"}
+        </button>
+        <button
           type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            applyPreset({
-              base: "car_petrol",
-              alt: "carpool",
-              baseDays: 5,
-              altDays: 5,
-              baseOcc: 1,
-              altOcc: 3,
-            })
-          }
+          role="tab"
+          aria-selected={activeTab === "exposure"}
+          onClick={() => setActiveTab("exposure")}
+          className={`rounded-lg px-3.5 py-1.5 font-medium transition-colors ${
+            activeTab === "exposure"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
         >
-          {locale === "hi" ? "अकेले ड्राइव बनाम कारपूल (3)" : "Solo vs Carpool (3p)"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            applyPreset({
-              base: baselineMode === "work_from_home" ? "car_petrol" : baselineMode,
-              alt: "work_from_home",
-              baseDays: 5,
-              altDays: 5,
-            })
-          }
-        >
-          {locale === "hi" ? "ऑन-साइट बनाम रिमोट" : "On-site vs Remote"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            applyPreset({
-              base: baselineMode,
-              alt: baselineMode,
-              baseDays: 5,
-              altDays: 3,
-            })
-          }
-        >
-          {locale === "hi" ? "हाइब्रिड शेड्यूल (5 → 3 दिन)" : "Hybrid Schedule (5d → 3d)"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            applyPreset({
-              base: "bus",
-              alt: "car_petrol",
-              baseDays: 5,
-              altDays: 5,
-              baseOcc: 1,
-              altOcc: 1,
-            })
-          }
-        >
-          {locale === "hi" ? "बस → कार (नकारात्मक जांच)" : "Bus → Petrol Car (+Increase)"}
-        </Button>
+          {locale === "hi" ? "बाहरी एक्सपोज़र तुलना" : "Outdoor Exposure Comparison"}
+        </button>
       </div>
 
-      {/* Main Bento Grid: Inputs + Visualization */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-5 border-border/80">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Scale className="size-4 text-primary" aria-hidden="true" />
-              <span>{dict.whatIfTitle}</span>
-            </CardTitle>
-            <CardDescription>
-              {locale === "hi"
-                ? "सभी स्लाइडर और मोड बदलने पर गणना तुरंत अपडेट होती है।"
-                : "Adjust round-trip distance, weekly frequency, active weeks, and passenger occupancy."}
-            </CardDescription>
-          </CardHeader>
+      {activeTab === "travel" ? (
+        <>
+          {/* What-If Quick Presets */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-medium text-muted-foreground">
+              {dict.scenarioPresetsTitle}:
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                applyPreset({
+                  base: "car_petrol",
+                  alt: "metro_rail",
+                  baseDays: 5,
+                  altDays: 5,
+                  baseOcc: 1,
+                })
+              }
+            >
+              {locale === "hi" ? "पेट्रोल कार बनाम मेट्रो" : "Petrol Car vs Metro"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                applyPreset({
+                  base: "car_petrol",
+                  alt: "carpool",
+                  baseDays: 5,
+                  altDays: 5,
+                  baseOcc: 1,
+                  altOcc: 3,
+                })
+              }
+            >
+              {locale === "hi" ? "अकेले ड्राइव बनाम कारपूल (3)" : "Solo vs Carpool (3p)"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                applyPreset({
+                  base: baselineMode === "work_from_home" ? "car_petrol" : baselineMode,
+                  alt: "work_from_home",
+                  baseDays: 5,
+                  altDays: 5,
+                })
+              }
+            >
+              {locale === "hi" ? "ऑन-साइट बनाम रिमोट" : "On-site vs Remote"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                applyPreset({
+                  base: baselineMode,
+                  alt: baselineMode,
+                  baseDays: 5,
+                  altDays: 3,
+                })
+              }
+            >
+              {locale === "hi" ? "हाइब्रिड शेड्यूल (5 → 3 दिन)" : "Hybrid Schedule (5d → 3d)"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                applyPreset({
+                  base: "bus",
+                  alt: "car_petrol",
+                  baseDays: 5,
+                  altDays: 5,
+                  baseOcc: 1,
+                  altOcc: 1,
+                })
+              }
+            >
+              {locale === "hi" ? "बस → कार (नकारात्मक जांच)" : "Bus → Petrol Car (+Increase)"}
+            </Button>
+          </div>
 
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="impact-distance">{dict.distanceLabel}</Label>
-                <span className="text-xs font-semibold tabular-nums text-primary">
-                  {distanceKm} km
-                </span>
-              </div>
-              <input
-                type="range"
-                aria-label={dict.distanceLabel}
-                min={0}
-                max={120}
-                step={0.5}
-                value={Math.min(120, distanceKm)}
-                onChange={(e) => setDistanceKm(Number(e.target.value))}
-                className="w-full accent-emerald-500"
-              />
-              <Input
-                id="impact-distance"
-                type="number"
-                min={0}
-                max={500}
-                step={0.5}
-                value={distanceKm}
-                onChange={(e) => setDistanceKm(Math.max(0, Number(e.target.value)))}
-              />
-            </div>
+          {/* Main Bento Grid: 4 Essential Inputs + Chart */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            <Card className="lg:col-span-5 border-border/80">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Scale className="size-4 text-primary" aria-hidden="true" />
+                  <span>{dict.whatIfTitle}</span>
+                </CardTitle>
+                <CardDescription>
+                  {locale === "hi"
+                    ? "दूरी, साधन और दिन बदलकर तुरंत उत्सर्जन अंतर देखें।"
+                    : "Adjust daily distance, travel modes, and days per week."}
+                </CardDescription>
+              </CardHeader>
 
-            <div className="grid grid-cols-3 gap-2.5">
-              <div className="space-y-1.5">
-                <Label htmlFor="impact-base-days" className="text-xs">
-                  {locale === "hi" ? "बेस दिन/सप्ताह" : "Base days/wk"}
-                </Label>
-                <Input
-                  id="impact-base-days"
-                  type="number"
-                  min={0}
-                  max={7}
-                  value={baseDaysPerWeek}
-                  onChange={(e) =>
-                    setBaseDaysPerWeek(Math.min(7, Math.max(0, Number(e.target.value))))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="impact-alt-days" className="text-xs">
-                  {locale === "hi" ? "वैकल्पिक दिन" : "Alt days/wk"}
-                </Label>
-                <Input
-                  id="impact-alt-days"
-                  type="number"
-                  min={0}
-                  max={7}
-                  value={altDaysPerWeek}
-                  onChange={(e) =>
-                    setAltDaysPerWeek(Math.min(7, Math.max(0, Number(e.target.value))))
-                  }
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="impact-weeks" className="text-xs">
-                  {dict.weeksLabel}
-                </Label>
-                <Input
-                  id="impact-weeks"
-                  type="number"
-                  min={1}
-                  max={52}
-                  value={workingWeeks}
-                  onChange={(e) =>
-                    setWorkingWeeks(Math.min(52, Math.max(1, Number(e.target.value))))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <Label htmlFor="impact-baseline">{dict.baselineModeLabel}</Label>
-                <select
-                  id="impact-baseline"
-                  value={baselineMode}
-                  onChange={(e) =>
-                    setBaselineMode(e.target.value as Exclude<CommuteMode, "walk_cycle">)
-                  }
-                  className={selectClass}
-                >
-                  {ALL_MODES.map((m) => (
-                    <option key={m} value={m}>
-                      {phase04Dict.commuteModes[m]}
-                    </option>
-                  ))}
-                </select>
-                {baseFactor.basis === "vehicle_km" ? (
-                  <div className="pt-1">
-                    <Label htmlFor="impact-base-occ" className="text-[11px] text-muted-foreground">
-                      {dict.occupancyLabel} ({baseFactor.minOccupancy}–{baseFactor.maxOccupancy})
-                    </Label>
-                    <Input
-                      id="impact-base-occ"
-                      type="number"
-                      min={baseFactor.minOccupancy}
-                      max={baseFactor.maxOccupancy}
-                      value={clampedBaseOcc}
-                      onChange={(e) => setBaseOccupancy(Number(e.target.value) || 1)}
-                      className="mt-1 h-8 text-xs"
-                    />
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="impact-distance">{dict.distanceLabel}</Label>
+                    <span className="text-xs font-semibold tabular-nums text-primary">
+                      {distanceKm} km
+                    </span>
                   </div>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    {baseFactor.basis === "passenger_km"
-                      ? locale === "hi"
-                        ? "यात्री-किमी कारक (सीधे लागू, दोबारा विभाजन नहीं)"
-                        : "Passenger-km factor (no double occupancy division)"
-                      : locale === "hi"
-                        ? "शून्य परिचालन परिवहन सीमा"
-                        : "Zero operational transport scope"}
-                  </p>
-                )}
-              </div>
+                  <input
+                    type="range"
+                    aria-label={dict.distanceLabel}
+                    min={0}
+                    max={120}
+                    step={0.5}
+                    value={Math.min(120, distanceKm)}
+                    onChange={(e) => setDistanceKm(Number(e.target.value))}
+                    className="w-full accent-emerald-500"
+                  />
+                  <Input
+                    id="impact-distance"
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={0.5}
+                    value={distanceKm}
+                    onChange={(e) => setDistanceKm(Math.max(0, Number(e.target.value)))}
+                  />
+                </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="impact-alt">{dict.altModeLabel}</Label>
-                <select
-                  id="impact-alt"
-                  value={altMode}
-                  onChange={(e) =>
-                    setAltMode(e.target.value as Exclude<CommuteMode, "walk_cycle">)
-                  }
-                  className={selectClass}
-                >
-                  {ALL_MODES.map((m) => (
-                    <option key={m} value={m}>
-                      {phase04Dict.commuteModes[m]}
-                    </option>
-                  ))}
-                </select>
-                {altFactor.basis === "vehicle_km" ? (
-                  <div className="pt-1">
-                    <Label htmlFor="impact-alt-occ" className="text-[11px] text-muted-foreground">
-                      {dict.occupancyLabel} ({altFactor.minOccupancy}–{altFactor.maxOccupancy})
-                    </Label>
-                    <Input
-                      id="impact-alt-occ"
-                      type="number"
-                      min={altFactor.minOccupancy}
-                      max={altFactor.maxOccupancy}
-                      value={clampedAltOcc}
-                      onChange={(e) => setAltOccupancy(Number(e.target.value) || 1)}
-                      className="mt-1 h-8 text-xs"
-                    />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="impact-baseline">{dict.baselineModeLabel}</Label>
+                    <select
+                      id="impact-baseline"
+                      value={baselineMode}
+                      onChange={(e) =>
+                        setBaselineMode(e.target.value as Exclude<CommuteMode, "walk_cycle">)
+                      }
+                      className={selectClass}
+                    >
+                      {ALL_MODES.map((m) => (
+                        <option key={m} value={m}>
+                          {phase04Dict.commuteModes[m]}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ) : (
-                  <p className="text-[11px] text-muted-foreground">
-                    {altFactor.basis === "passenger_km"
-                      ? locale === "hi"
-                        ? "यात्री-किमी कारक (सीधे लागू)"
-                        : "Passenger-km factor (no double division)"
-                      : locale === "hi"
-                        ? "शून्य परिचालन परिवहन सीमा"
-                        : "Zero operational transport scope"}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="impact-alt">{dict.altModeLabel}</Label>
+                    <select
+                      id="impact-alt"
+                      value={altMode}
+                      onChange={(e) =>
+                        setAltMode(e.target.value as Exclude<CommuteMode, "walk_cycle">)
+                      }
+                      className={selectClass}
+                    >
+                      {ALL_MODES.map((m) => (
+                        <option key={m} value={m}>
+                          {phase04Dict.commuteModes[m]}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="impact-base-days" className="text-xs">
+                    {dict.daysLabel}
+                  </Label>
+                  <Input
+                    id="impact-base-days"
+                    type="number"
+                    min={0}
+                    max={7}
+                    value={baseDaysPerWeek}
+                    onChange={(e) => {
+                      const next = Math.min(7, Math.max(0, Number(e.target.value)));
+                      setBaseDaysPerWeek(next);
+                      setAltDaysPerWeek(next);
+                    }}
+                  />
+                </div>
+
+                <details className="rounded-xl border border-border/80 bg-muted/20 p-3 text-xs">
+                  <summary className="cursor-pointer select-none font-medium text-foreground">
+                    {locale === "hi" ? "उन्नत सेटिंग्स" : "Advanced Settings"}
+                  </summary>
+                  <div className="mt-3 space-y-3">
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <Label htmlFor="impact-alt-days" className="text-xs">
+                          {locale === "hi" ? "वैकल्पिक दिन/सप्ताह" : "Alternative days/wk"}
+                        </Label>
+                        <Input
+                          id="impact-alt-days"
+                          type="number"
+                          min={0}
+                          max={7}
+                          value={altDaysPerWeek}
+                          onChange={(e) =>
+                            setAltDaysPerWeek(Math.min(7, Math.max(0, Number(e.target.value))))
+                          }
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="impact-weeks" className="text-xs">
+                          {dict.weeksLabel}
+                        </Label>
+                        <Input
+                          id="impact-weeks"
+                          type="number"
+                          min={1}
+                          max={52}
+                          value={workingWeeks}
+                          onChange={(e) =>
+                            setWorkingWeeks(Math.min(52, Math.max(1, Number(e.target.value))))
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                      {baseFactor.basis === "vehicle_km" ? (
+                        <div className="space-y-1">
+                          <Label htmlFor="impact-base-occ" className="text-[11px] text-muted-foreground">
+                            Current {dict.occupancyLabel} ({baseFactor.minOccupancy}–{baseFactor.maxOccupancy})
+                          </Label>
+                          <Input
+                            id="impact-base-occ"
+                            type="number"
+                            min={baseFactor.minOccupancy}
+                            max={baseFactor.maxOccupancy}
+                            value={clampedBaseOcc}
+                            onChange={(e) => setBaseOccupancy(Number(e.target.value) || 1)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      ) : null}
+
+                      {altFactor.basis === "vehicle_km" ? (
+                        <div className="space-y-1">
+                          <Label htmlFor="impact-alt-occ" className="text-[11px] text-muted-foreground">
+                            Alt {dict.occupancyLabel} ({altFactor.minOccupancy}–{altFactor.maxOccupancy})
+                          </Label>
+                          <Input
+                            id="impact-alt-occ"
+                            type="number"
+                            min={altFactor.minOccupancy}
+                            max={altFactor.maxOccupancy}
+                            value={clampedAltOcc}
+                            onChange={(e) => setAltOccupancy(Number(e.target.value) || 1)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </details>
+              </CardContent>
+            </Card>
 
         {/* Chart & Horizon KPIs */}
         <Card className="lg:col-span-7 border-border/80">
@@ -1059,7 +1090,7 @@ export function ImpactView() {
           </button>
         </CardHeader>
 
-        {comp ? (
+        {comp && showMethodology ? (
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {[
@@ -1105,54 +1136,53 @@ export function ImpactView() {
               ))}
             </div>
 
-            {showMethodology ? (
-              <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4 text-xs">
-                <p className="flex items-center gap-1.5 font-semibold text-foreground">
-                  <Info className="size-4 text-primary" />
-                  All 12 Documented Modes ({comp.registryVersion})
-                </p>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {Object.values(EMISSION_FACTOR_REGISTRY).map((ef) => (
-                    <div
-                      key={ef.factorId}
-                      className="rounded-lg border border-border bg-background/70 p-2.5"
-                    >
-                      <p className="font-semibold">
-                        {locale === "hi" ? ef.labelHi : ef.labelEn}
-                      </p>
-                      <p className="font-mono text-[11px] text-primary">
-                        {ef.numericalFactorKgCo2e} {ef.unit}
-                      </p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">
-                        {ef.geographicApplicability}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-                <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
-                  {comp.limitations.map((l) => (
-                    <li key={l}>{l}</li>
-                  ))}
-                </ul>
+            <div className="space-y-3 rounded-xl border border-border bg-muted/40 p-4 text-xs">
+              <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Info className="size-4 text-primary" />
+                All 12 Documented Modes ({comp.registryVersion})
+              </p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.values(EMISSION_FACTOR_REGISTRY).map((ef) => (
+                  <div
+                    key={ef.factorId}
+                    className="rounded-lg border border-border bg-background/70 p-2.5"
+                  >
+                    <p className="font-semibold">
+                      {locale === "hi" ? ef.labelHi : ef.labelEn}
+                    </p>
+                    <p className="font-mono text-[11px] text-primary">
+                      {ef.numericalFactorKgCo2e} {ef.unit}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {ef.geographicApplicability}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ) : null}
+              <ul className="list-disc space-y-1 pl-5 text-muted-foreground">
+                {comp.limitations.map((l) => (
+                  <li key={l}>{l}</li>
+                ))}
+              </ul>
+            </div>
           </CardContent>
         ) : null}
       </Card>
 
-      {/* Separate Outdoor Ambient Concentration-Time Comparison */}
-      <ExposureComparisonCard
-        forecast={forecast}
-        loadingForecast={loadingForecast}
-      />
-
-      {/* Green Activity Progress Tracker */}
-      <ActivityTrackerCard
-        activeBaselineMode={baselineMode}
-        activeAlternativeMode={altMode}
-        activeDistanceKm={distanceKm}
-        activeOccupancy={clampedAltOcc}
-      />
+          {/* Green Activity Progress Tracker */}
+          <ActivityTrackerCard
+            activeBaselineMode={baselineMode}
+            activeAlternativeMode={altMode}
+            activeDistanceKm={distanceKm}
+            activeOccupancy={clampedAltOcc}
+          />
+        </>
+      ) : (
+        <ExposureComparisonCard
+          forecast={forecast}
+          loadingForecast={loadingForecast}
+        />
+      )}
     </div>
   );
 }

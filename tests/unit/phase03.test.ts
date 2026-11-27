@@ -7,8 +7,9 @@ import { clearMemoryCacheForTests } from "@/lib/cache/memory-cache";
 import { aiChatResponseSchema } from "@/lib/ai/schemas";
 import { sanitizeModelText } from "@/lib/ai/safety";
 import { formatHourInTz } from "@/lib/air-quality/intelligence";
+import { openMeteoAirQualityService } from "@/services/air-quality/open-meteo";
 import { generateStructuredWithGemini } from "@/services/gemini/gemini-service";
-import { DEMO_LOCATIONS } from "@/lib/demo/air-quality-demo";
+import { DEMO_LOCATIONS, getDemoForecast } from "@/lib/demo/air-quality-demo";
 
 const NEW_DELHI = DEMO_LOCATIONS[0];
 
@@ -139,6 +140,9 @@ describe("Phase 03 Gemini Service, Routes & Phase 02 Regressions", () => {
 
   test("POST /api/ai/chat rejects cross-origin, oversized payload, and unconfigured key truthfully", async () => {
     vi.stubEnv("GEMINI_API_KEY", "");
+    vi.spyOn(openMeteoAirQualityService, "getForecast").mockResolvedValue(
+      getDemoForecast("new-delhi")
+    );
 
     // Origin mismatch -> 403
     const badOriginReq = new NextRequest("http://localhost:3000/api/ai/chat", {

@@ -13,7 +13,6 @@ import {
   ShieldAlert,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
 } from "lucide-react";
 import {
   DemoNoticeBanner,
@@ -321,7 +320,7 @@ export function DashboardView() {
         <div
           role="status"
           className={cn(
-            "flex flex-wrap items-center justify-between gap-2 rounded-xl border px-4 py-2.5 text-xs",
+            "flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3.5 py-2 text-xs",
             isStale
               ? "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200"
               : "border-emerald-500/30 bg-emerald-500/10 text-emerald-900 dark:text-emerald-200"
@@ -336,31 +335,37 @@ export function DashboardView() {
               aria-hidden="true"
             />
             <span>{dict.dashboard.freshnessLabels[freshness]}</span>
-            <span className="opacity-75">·</span>
-            <span className="opacity-90">
-              {dict.dashboard.modelTimestamp}:{" "}
-              {formatDateTimeInTz(
-                activeForecast.provenance.modelTimestampIso ??
-                  activeForecast.current.timestampIso,
-                activeForecast.location.timezone
-              )}
-            </span>
           </div>
-          <span className="text-[11px] opacity-85">
-            {dict.dashboard.fetchedAt}:{" "}
-            {formatHourInTz(
-              activeForecast.provenance.fetchedAtIso,
-              activeForecast.location.timezone
-            )}{" "}
-            ({activeForecast.location.timezone})
-          </span>
+          <details className="text-[11px] opacity-90">
+            <summary className="cursor-pointer select-none font-medium hover:underline">
+              {locale === "hi" ? "डेटा विवरण" : "Data timestamp & source"}
+            </summary>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
+              <span>
+                {dict.dashboard.modelTimestamp}:{" "}
+                {formatDateTimeInTz(
+                  activeForecast.provenance.modelTimestampIso ??
+                    activeForecast.current.timestampIso,
+                  activeForecast.location.timezone
+                )}
+              </span>
+              <span>
+                {dict.dashboard.fetchedAt}:{" "}
+                {formatHourInTz(
+                  activeForecast.provenance.fetchedAtIso,
+                  activeForecast.location.timezone
+                )}{" "}
+                ({activeForecast.location.timezone})
+              </span>
+            </div>
+          </details>
         </div>
       ) : null}
 
       {/* Compact Command-Center Header & Search */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
-        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-          <div className="space-y-1">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-3.5 sm:p-4">
+        <div className="flex flex-col justify-between gap-2.5 md:flex-row md:items-center">
+          <div className="space-y-0.5">
             <p className="text-xs font-medium text-muted-foreground">
               {getGreetingByHour(clientHour, dict)} · {dict.dashboard.preparedFor}{" "}
               <span className="text-foreground">{householdSummary}</span>
@@ -389,22 +394,10 @@ export function DashboardView() {
               >
                 <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
                 <span>
-                  {locale === "hi" ? "सेटअप वैयक्तिकृत करें" : "Personalize Setup"}
+                  {locale === "hi" ? "प्रोफ़ाइल सेट करें" : "Personalize"}
                 </span>
               </Link>
             ) : null}
-            <Link
-              href="/impact"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "gap-1.5"
-              )}
-            >
-              <span>
-                {locale === "hi" ? "प्रभाव कैलकुलेटर" : "Impact Lab"}
-              </span>
-              <ArrowRight className="size-3.5" aria-hidden="true" />
-            </Link>
             <Button
               type="button"
               variant="outline"
@@ -523,8 +516,8 @@ export function DashboardView() {
 
             {/* Rule-Based Intelligence Hero Card */}
             {guidance ? (
-              <Card className="flex flex-col justify-between lg:col-span-7">
-                <CardHeader>
+              <Card className="flex flex-col lg:col-span-7">
+                <CardHeader className="pb-2">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <Badge
                       variant="outline"
@@ -533,7 +526,7 @@ export function DashboardView() {
                       <Sparkles className="size-3" aria-hidden="true" />
                       {locale === "hi"
                         ? "नियम-आधारित स्वास्थ्य मार्गदर्शन · AI तैयार"
-                        : "Rule-Based Intelligence · AI Assistant Ready"}
+                        : "Rule-Based Intelligence · AI Ready"}
                     </Badge>
                     {guidance.healthProtectionPriority ? (
                       <Badge
@@ -556,90 +549,91 @@ export function DashboardView() {
                   <CardTitle className="pt-1 text-lg sm:text-xl">
                     {guidance.headline}
                   </CardTitle>
-                  <CardDescription>{guidance.whyItMatters}</CardDescription>
                 </CardHeader>
 
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="rounded-xl border border-border bg-muted/35 p-3.5">
+                <CardContent className="flex flex-1 flex-col justify-between space-y-3">
+                  <div className="space-y-2.5">
+                    <div className="rounded-xl border border-border bg-muted/35 p-3">
                       <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {locale === "hi" ? "अनुशंसित कदम" : "Recommended Action"}
+                        {locale === "hi" ? "आज का मुख्य कदम" : "Top Recommendation"}
                       </p>
                       <p className="mt-1 text-sm leading-relaxed text-foreground">
                         {guidance.recommendedPrimaryAction}
                       </p>
                     </div>
-                    <div className="rounded-xl border border-border bg-muted/35 p-3.5">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        {locale === "hi" ? "अपेक्षित लाभ" : "Expected Qualitative Benefit"}
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-foreground">
-                        {guidance.expectedQualitativeBenefit}
-                      </p>
-                    </div>
+
+                    <ul className="space-y-1.5 px-0.5 text-xs text-muted-foreground">
+                      {guidance.items.slice(0, 3).map((item) => (
+                        <li key={item.id} className="flex items-start gap-2">
+                          <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
+                          <span>
+                            <strong className="font-medium text-foreground">
+                              {item.title}:
+                            </strong>{" "}
+                            {item.action}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                    <Link
-                      href="/planner"
-                      className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
-                    >
-                      <span>
-                        {locale === "hi" ? "दैनिक प्लानर खोलें" : "Open Daily Planner"}
-                      </span>
-                      <ArrowRight className="size-3.5" aria-hidden="true" />
-                    </Link>
-                    <Link
-                      href="/assistant"
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        "gap-1.5"
-                      )}
-                    >
-                      <span>{locale === "hi" ? "वायु AI से पूछें" : "Ask Vayu AI"}</span>
-                      <ArrowRight className="size-3.5" aria-hidden="true" />
-                    </Link>
+                  <div className="space-y-2.5 pt-1">
+                    <details className="rounded-xl border border-border/80 bg-muted/20 px-3 py-2 text-xs">
+                      <summary className="cursor-pointer select-none font-medium text-foreground">
+                        {locale === "hi" ? "यह सलाह क्यों और अपेक्षित लाभ" : "Why this helps & expected benefit"}
+                      </summary>
+                      <div className="mt-2 space-y-1.5 text-muted-foreground">
+                        <p>{guidance.whyItMatters}</p>
+                        <p className="text-foreground/90">{guidance.expectedQualitativeBenefit}</p>
+                      </div>
+                    </details>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href="/planner"
+                        className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
+                      >
+                        <span>
+                          {locale === "hi" ? "आज की योजना बनाएं" : "Plan my day"}
+                        </span>
+                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                      </Link>
+                      <Link
+                        href="/assistant"
+                        className={cn(
+                          buttonVariants({ variant: "outline", size: "sm" }),
+                          "gap-1.5"
+                        )}
+                      >
+                        <span>{locale === "hi" ? "Vayu AI से पूछें" : "Ask Vayu AI"}</span>
+                        <ArrowRight className="size-3.5" aria-hidden="true" />
+                      </Link>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ) : null}
           </div>
 
-          {/* Pollutant Intelligence Grid */}
-          <section className="space-y-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight">
-                {dict.dashboard.pollutantsTitle}
-              </h2>
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {dict.dashboard.pollutantsSubtitle}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              {POLLUTANT_ORDER.map((key) => {
-                const meta = POLLUTANT_DISPLAY_META[key];
-                const series = activeForecast.hourly
-                  .slice(0, 24)
-                  .map((pt) => pt.pollutants[key])
-                  .filter((v): v is number => v !== null && Number.isFinite(v));
-
-                return (
-                  <PollutantCard
-                    key={key}
-                    symbol={meta.symbol}
-                    name={locale === "hi" ? meta.nameHi : meta.nameEn}
-                    value={activeForecast.current.pollutants[key]}
-                    unit={activeForecast.units?.[key] ?? meta.defaultUnit}
-                    description={
-                      locale === "hi" ? meta.descriptionHi : meta.descriptionEn
-                    }
-                    sparklineValues={series}
-                  />
-                );
-              })}
-            </div>
-          </section>
+          {/* 4 Primary Quick Actions */}
+          <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+            {dict.dashboard.quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "h-11 justify-between rounded-xl px-3.5 text-xs font-medium sm:text-sm"
+                )}
+              >
+                <span className="truncate">{action.label}</span>
+                <ArrowRight
+                  className="size-3.5 shrink-0 text-primary"
+                  aria-hidden="true"
+                />
+              </Link>
+            ))}
+          </div>
 
           {/* Forecast Chart + Lower-Exposure Window Bento */}
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -802,30 +796,36 @@ export function DashboardView() {
                             : "No low-AQI daytime window — postpone non-essential trips or stay indoors"}
                         </p>
                       )}
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                        {locale === "hi"
-                          ? lowerWindow.practicalWindowNoteHi
-                          : lowerWindow.practicalWindowNoteEn}
-                      </p>
                     </div>
 
-                    <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs leading-relaxed">
-                      <AlertTriangle
-                        className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
-                        aria-hidden="true"
-                      />
-                      <p>
-                        {locale === "hi"
-                          ? lowerWindow.cautionHi
-                          : lowerWindow.cautionEn}
-                      </p>
-                    </div>
-
-                    <p className="text-[11px] leading-relaxed text-muted-foreground">
-                      {locale === "hi"
-                        ? lowerWindow.limitationNoteHi
-                        : lowerWindow.limitationNoteEn}
-                    </p>
+                    <details className="rounded-xl border border-border/80 bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+                      <summary className="cursor-pointer select-none font-medium text-foreground">
+                        {locale === "hi" ? "समय नोट्स और सीमाएं" : "Window notes & limitations"}
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        <p>
+                          {locale === "hi"
+                            ? lowerWindow.practicalWindowNoteHi
+                            : lowerWindow.practicalWindowNoteEn}
+                        </p>
+                        <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5">
+                          <AlertTriangle
+                            className="mt-0.5 size-3.5 shrink-0 text-amber-600 dark:text-amber-400"
+                            aria-hidden="true"
+                          />
+                          <p>
+                            {locale === "hi"
+                              ? lowerWindow.cautionHi
+                              : lowerWindow.cautionEn}
+                          </p>
+                        </div>
+                        <p>
+                          {locale === "hi"
+                            ? lowerWindow.limitationNoteHi
+                            : lowerWindow.limitationNoteEn}
+                        </p>
+                      </div>
+                    </details>
                   </div>
                 ) : (
                   <p className="text-xs text-muted-foreground">
@@ -838,84 +838,139 @@ export function DashboardView() {
             </Card>
           </div>
 
-          {/* Air Quality Insights Panel */}
-          <section className="space-y-3">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="size-4 text-primary" aria-hidden="true" />
-              <h2 className="text-lg font-semibold tracking-tight">
-                {dict.dashboard.insightsTitle}
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {insights.map((insight) => (
-                <Card key={insight.id} size="sm">
-                  <CardHeader className="pb-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">
-                      {insight.label}
-                    </p>
-                    <CardTitle className="text-sm font-semibold">
-                      {insight.value}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs leading-relaxed text-muted-foreground">
-                      {insight.detail}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-
-          {/* Rule-Based Health & Daily Recommendations + Quick Actions */}
+          {/* Top 3 Priority Recommendations */}
           {guidance ? (
-            <section className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-              <div className="space-y-3 lg:col-span-8">
-                <div>
-                  <h2 className="text-lg font-semibold tracking-tight">
-                    {dict.dashboard.recommendationsTitle}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {dict.dashboard.recommendationsSubtitle}
-                  </p>
-                </div>
+            <section className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-lg font-semibold tracking-tight">
+                  {dict.dashboard.recommendationsTitle}
+                </h2>
+                {activitySummary.totalRecords > 0 ? (
+                  <Badge variant="outline" className="border-emerald-500/35 bg-emerald-500/10 text-xs text-emerald-700 dark:text-emerald-300">
+                    {activitySummary.totalRecords}{" "}
+                    {locale === "hi" ? "पूर्ण कार्य" : "actions logged"} ·{" "}
+                    {activitySummary.weeklySavingsKgCo2e.toFixed(1)} kg CO₂e
+                  </Badge>
+                ) : null}
+              </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  {guidance.items.map((item) => (
-                    <Card key={item.id} size="sm">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {guidance.items.slice(0, 3).map((item) => (
+                  <Card key={item.id} size="sm">
+                    <CardHeader className="pb-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-sm">{item.title}</CardTitle>
+                        <Badge
+                          variant={
+                            item.priority === "protective"
+                              ? "secondary"
+                              : "outline"
+                          }
+                          className="text-[10px]"
+                        >
+                          {item.priority === "protective"
+                            ? "Protective"
+                            : "Advisory"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2 text-xs">
+                      <p className="leading-relaxed text-foreground">
+                        {item.action}
+                      </p>
+                      <details className="text-muted-foreground">
+                        <summary className="cursor-pointer select-none font-medium text-foreground/80">
+                          {locale === "hi" ? "क्यों?" : "Why?"}
+                        </summary>
+                        <p className="mt-1 leading-relaxed">{item.rationale}</p>
+                      </details>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* Progressive Disclosure Accordions for Technical Details */}
+          <div className="space-y-3">
+            <details className="rounded-2xl border border-border bg-card p-4">
+              <summary className="cursor-pointer select-none text-sm font-semibold text-foreground sm:text-base">
+                {dict.dashboard.pollutantsTitle}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  (PM₂.₅, PM₁₀, NO₂, SO₂, O₃, CO)
+                </span>
+              </summary>
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {POLLUTANT_ORDER.map((key) => {
+                  const meta = POLLUTANT_DISPLAY_META[key];
+                  const series = activeForecast.hourly
+                    .slice(0, 24)
+                    .map((pt) => pt.pollutants[key])
+                    .filter((v): v is number => v !== null && Number.isFinite(v));
+
+                  return (
+                    <PollutantCard
+                      key={key}
+                      symbol={meta.symbol}
+                      name={locale === "hi" ? meta.nameHi : meta.nameEn}
+                      value={activeForecast.current.pollutants[key]}
+                      unit={activeForecast.units?.[key] ?? meta.defaultUnit}
+                      description={
+                        locale === "hi" ? meta.descriptionHi : meta.descriptionEn
+                      }
+                      sparklineValues={series}
+                    />
+                  );
+                })}
+              </div>
+            </details>
+
+            <details className="rounded-2xl border border-border bg-card p-4">
+              <summary className="cursor-pointer select-none text-sm font-semibold text-foreground sm:text-base">
+                {dict.dashboard.insightsTitle}
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {locale === "hi" ? "अतिरिक्त विश्लेषण व स्वास्थ्य स्रोत" : "Trends, extra tips & health sources"}
+                </span>
+              </summary>
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                  {insights.map((insight) => (
+                    <Card key={insight.id} size="sm">
                       <CardHeader className="pb-1">
-                        <div className="flex items-center justify-between gap-2">
-                          <CardTitle className="text-sm">{item.title}</CardTitle>
-                          <Badge
-                            variant={
-                              item.priority === "protective"
-                                ? "secondary"
-                                : "outline"
-                            }
-                            className="text-[10px]"
-                          >
-                            {item.priority === "protective"
-                              ? "Protective"
-                              : "Advisory"}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className="space-y-1.5 text-xs">
-                        <p className="leading-relaxed text-foreground">
-                          {item.action}
+                        <p className="text-[11px] font-medium text-muted-foreground">
+                          {insight.label}
                         </p>
-                        <p className="leading-relaxed text-muted-foreground">
-                          {item.rationale}
+                        <CardTitle className="text-sm font-semibold">
+                          {insight.value}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-xs leading-relaxed text-muted-foreground">
+                          {insight.detail}
                         </p>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
 
-                <div className="rounded-xl border border-border bg-card p-3.5 text-xs text-muted-foreground space-y-2">
-                  <p>{guidance.medicalDisclaimer}</p>
-                  <div className="flex flex-wrap gap-3">
+                {guidance && guidance.items.length > 3 ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {guidance.items.slice(3).map((item) => (
+                      <Card key={item.id} size="sm">
+                        <CardHeader className="pb-1">
+                          <CardTitle className="text-sm">{item.title}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-1 text-xs">
+                          <p className="text-foreground">{item.action}</p>
+                          <p className="text-muted-foreground">{item.rationale}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : null}
+
+                {guidance ? (
+                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                     {guidance.references.map((ref) => (
                       <a
                         key={ref.url}
@@ -929,54 +984,15 @@ export function DashboardView() {
                       </a>
                     ))}
                   </div>
-                </div>
+                ) : null}
               </div>
+            </details>
+          </div>
 
-              <Card className="h-fit lg:col-span-4">
-                <CardHeader>
-                  <CardTitle className="text-base">
-                    {dict.dashboard.quickActionsTitle}
-                  </CardTitle>
-                  <CardDescription>
-                    {locale === "hi"
-                      ? "व्यक्तिगत योजना, इनडोर सुरक्षा, प्रभाव और रिपोर्ट टूल"
-                      : "Jump straight to AI planning, indoor protection, impact calculations, or your printable report."}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {activitySummary.totalRecords > 0 ? (
-                    <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/8 p-3 text-xs">
-                      <p className="font-semibold text-foreground">
-                        {locale === "hi" ? "हरित प्रगति सारांश" : "Achieved Green Progress"}
-                      </p>
-                      <p className="mt-0.5 text-muted-foreground">
-                        {activitySummary.totalRecords}{" "}
-                        {locale === "hi" ? "पूर्ण कार्य" : "logged actions"} ·{" "}
-                        {activitySummary.weeklySavingsKgCo2e.toFixed(1)} kg CO₂e (7d)
-                      </p>
-                    </div>
-                  ) : null}
-                  <div className="grid grid-cols-1 gap-2">
-                    {dict.dashboard.quickActions.map((action) => (
-                      <Link
-                        key={action.href}
-                        href={action.href}
-                        className={cn(
-                          buttonVariants({ variant: "outline", size: "sm" }),
-                          "h-9 justify-between px-3"
-                        )}
-                      >
-                        <span className="truncate">{action.label}</span>
-                        <ArrowRight
-                          className="size-3.5 shrink-0 text-muted-foreground"
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </section>
+          {guidance ? (
+            <p className="px-1 text-[11px] leading-relaxed text-muted-foreground">
+              {guidance.medicalDisclaimer}
+            </p>
           ) : null}
         </>
       ) : null}

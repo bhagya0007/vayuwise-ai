@@ -13,7 +13,6 @@ import {
   AiDisclosureNote,
   AiErrorRecoveryCard,
   AiProvenanceBadge,
-  ContextMetaStrip,
   WhyRecommendationToggle,
   type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
@@ -183,30 +182,27 @@ export function IndoorAirView() {
   const checklistItems = CHECKLIST_TEMPLATES[locale];
 
   return (
-    <div className="space-y-6">
-      <AiDisclosureNote />
-      <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
-
-      <div className="flex items-start gap-2.5 rounded-xl border border-sky-500/35 bg-sky-500/8 px-4 py-3 text-xs text-muted-foreground">
-        <Info className="mt-0.5 size-4 shrink-0 text-sky-400" aria-hidden="true" />
+    <div className="space-y-4">
+      <div className="flex items-start gap-2 rounded-xl border border-sky-500/35 bg-sky-500/8 px-3.5 py-2.5 text-xs text-muted-foreground">
+        <Info className="mt-0.5 size-3.5 shrink-0 text-sky-400" aria-hidden="true" />
         <span>
           {locale === "hi"
-            ? "पारदर्शिता: इनडोर वायु गुणवत्ता सीधे मापी नहीं गई है — ये सुझाव Open-Meteo बाहरी मॉडल्ड डेटा और आपके रूम/बजट सेटअप पर आधारित हैं। ओज़ोन जनरेटर या केवल पौधों पर निर्भर रहने से बचें।"
-            : "Transparency Note: Indoor air levels inside your rooms are unmeasured. Recommendations adapt outdoor Open-Meteo modeled conditions to your cooking setup, budget, and filtration. Avoid ozone generators and never treat houseplants as substitutes for mechanical filtration."}
+            ? "इनडोर हवा सीधे मापी नहीं गई है — सुझाव Open-Meteo बाहरी डेटा और आपके घर के सेटअप पर आधारित हैं। ओज़ोन जनरेटर या केवल पौधों पर निर्भर न रहें।"
+            : "Indoor levels are unmeasured — guidance adapts outdoor Open-Meteo data to your home setup. Avoid ozone generators and never rely on houseplants alone."}
         </span>
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <CardTitle className="text-2xl font-semibold">
-                {locale === "hi" ? "AI इनडोर वायु कोच" : "AI Indoor Air Coach"}
-              </CardTitle>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                {locale === "hi" ? "अपने घर की हवा सुधारें" : "Improve your home's air"}
+              </h1>
               <CardDescription>
                 {locale === "hi"
-                  ? `${selectedLocation.name} के बाहरी प्रदूषण के अनुसार कमरे, रसोई धुआं और वेंटिलेशन मार्गदर्शन।`
-                  : `Room-specific ventilation timing, cooking smoke reduction, and filtration tailored to ${selectedLocation.name}.`}
+                  ? `${selectedLocation.name} के लिए कम-धुएं और सुरक्षित वेंटिलेशन सलाह।`
+                  : `Practical ventilation and low-smoke steps for ${selectedLocation.name}.`}
               </CardDescription>
             </div>
             <Button
@@ -224,101 +220,104 @@ export function IndoorAirView() {
           </div>
         </CardHeader>
 
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="indoor-room-select">
-              {locale === "hi" ? "कमरे का चयन" : "Room Focus"}
-            </Label>
-            <select
-              id="indoor-room-select"
-              value={roomFocus}
-              onChange={(e) => setRoomFocus(e.target.value as typeof roomFocus)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="whole_home">
-                {locale === "hi" ? "पूरा घर" : "Whole Home"}
-              </option>
-              <option value="bedroom">
-                {locale === "hi" ? "शयनकक्ष (Bedroom)" : "Bedroom"}
-              </option>
-              <option value="kitchen">
-                {locale === "hi" ? "रसोईघर (Kitchen)" : "Kitchen"}
-              </option>
-              <option value="living_room">
-                {locale === "hi" ? "लिविंग रूम" : "Living Room"}
-              </option>
-              <option value="study_work">
-                {locale === "hi" ? "अध्ययन / होम ऑफ़िस" : "Study / Home Office"}
-              </option>
-            </select>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label htmlFor="indoor-room-select" className="text-xs">
+                {locale === "hi" ? "कमरा" : "Room"}
+              </Label>
+              <select
+                id="indoor-room-select"
+                value={roomFocus}
+                onChange={(e) => setRoomFocus(e.target.value as typeof roomFocus)}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="whole_home">
+                  {locale === "hi" ? "पूरा घर" : "Whole Home"}
+                </option>
+                <option value="bedroom">
+                  {locale === "hi" ? "शयनकक्ष (Bedroom)" : "Bedroom"}
+                </option>
+                <option value="kitchen">
+                  {locale === "hi" ? "रसोईघर (Kitchen)" : "Kitchen"}
+                </option>
+                <option value="living_room">
+                  {locale === "hi" ? "लिविंग रूम" : "Living Room"}
+                </option>
+                <option value="study_work">
+                  {locale === "hi" ? "अध्ययन / होम ऑफ़िस" : "Study / Home Office"}
+                </option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="indoor-cooking-select" className="text-xs">
+                {locale === "hi" ? "रसोई" : "Cooking Setup"}
+              </Label>
+              <select
+                id="indoor-cooking-select"
+                value={cookingStyle}
+                onChange={(e) =>
+                  setCookingStyle(e.target.value as typeof cookingStyle)
+                }
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="lpg_gas">LPG / PNG Gas Stove</option>
+                <option value="electric_induction">Electric / Induction</option>
+                <option value="mixed">Mixed Gas & Electric</option>
+                <option value="solid_fuel_nearby">Solid Fuel / Biomass Nearby</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="indoor-budget-select" className="text-xs">
+                {locale === "hi" ? "बजट" : "Budget"}
+              </Label>
+              <select
+                id="indoor-budget-select"
+                value={budgetTier}
+                onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="free">
+                  {locale === "hi" ? "शून्य-खर्च आदतें" : "Zero-Cost Habits"}
+                </option>
+                <option value="low_cost">
+                  {locale === "hi" ? "कम-खर्च उपाय" : "Low-Cost Swaps"}
+                </option>
+                <option value="investment">
+                  {locale === "hi" ? "उपकरण निवेश" : "Equipment Investment"}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="indoor-cooking-select">
-              {locale === "hi" ? "रसोई सेटअप" : "Cooking Setup"}
-            </Label>
-            <select
-              id="indoor-cooking-select"
-              value={cookingStyle}
-              onChange={(e) =>
-                setCookingStyle(e.target.value as typeof cookingStyle)
-              }
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="lpg_gas">LPG / PNG Gas Stove</option>
-              <option value="electric_induction">Electric / Induction</option>
-              <option value="mixed">Mixed Gas & Electric</option>
-              <option value="solid_fuel_nearby">Solid Fuel / Biomass Nearby</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="indoor-budget-select">
-              {locale === "hi" ? "बजट श्रेणी" : "Budget Tier"}
-            </Label>
-            <select
-              id="indoor-budget-select"
-              value={budgetTier}
-              onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="free">
-                {locale === "hi" ? "शून्य-खर्च आदतें" : "Zero-Cost Habits"}
-              </option>
-              <option value="low_cost">
-                {locale === "hi" ? "कम-खर्च उपाय" : "Low-Cost Swaps"}
-              </option>
-              <option value="investment">
-                {locale === "hi" ? "उपकरण निवेश" : "Equipment Investment"}
-              </option>
-            </select>
-          </div>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none font-medium text-foreground/80">
+              {locale === "hi" ? "AI गोपनीयता और प्रोफ़ाइल संदर्भ" : "AI privacy & profile context"}
+            </summary>
+            <div className="mt-2 space-y-2">
+              <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
+              <AiDisclosureNote />
+            </div>
+          </details>
         </CardContent>
       </Card>
 
-      {/* Personalized Household Protection Checklist */}
+      {/* Compact Top Actions Checklist */}
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <CardTitle className="text-base">
-                {locale === "hi"
-                  ? "दैनिक इनडोर सुरक्षा चेकलिस्ट"
-                  : "Personalized Household Protection Checklist"}
-              </CardTitle>
-              <CardDescription>
-                {locale === "hi"
-                  ? "पूर्ण किए गए कार्यों को टिक करें (एक्टिविटी ट्रैकर में सुरक्षित होता है)।"
-                  : "Tick completed habits to record indoor air protections locally."}
-              </CardDescription>
-            </div>
+            <CardTitle className="text-base">
+              {locale === "hi" ? "आज आप क्या कर सकते हैं" : "What you can do today"}
+            </CardTitle>
             <Badge variant="outline">
               {completedChecklist.length}/{checklistItems.length}{" "}
               {locale === "hi" ? "पूर्ण" : "done"}
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+        <CardContent className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {checklistItems.map((item) => {
             const checked = completedChecklist.includes(item.id);
             return (
@@ -327,7 +326,7 @@ export function IndoorAirView() {
                 type="button"
                 aria-pressed={checked}
                 onClick={() => toggleChecklist(item)}
-                className={`flex items-start gap-2.5 rounded-xl border p-3 text-left text-xs transition-colors ${
+                className={`flex items-start gap-2.5 rounded-xl border p-2.5 text-left text-xs transition-colors ${
                   checked
                     ? "border-primary/40 bg-primary/10 text-foreground"
                     : "border-border bg-muted/25 text-muted-foreground hover:bg-muted/45"
@@ -365,67 +364,87 @@ export function IndoorAirView() {
       {loading ? (
         <Skeleton className="h-60 w-full rounded-2xl" />
       ) : data ? (
-        <div className="space-y-5">
-          <div className="space-y-2.5 rounded-2xl border border-border bg-card p-4">
+        <div className="space-y-4">
+          <div className="space-y-2 rounded-2xl border border-border bg-card p-4">
             <AiProvenanceBadge
               aiGenerated={aiGenerated}
               provenanceMode={provenanceMode}
               modelUsed={modelUsed}
             />
-            <h2 className="text-lg font-semibold">{data.headline}</h2>
-            <p className="text-sm text-muted-foreground">
+            <h2 className="text-base font-semibold sm:text-lg">{data.headline}</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {data.ventilationSummary}
             </p>
-            {contextMeta ? <ContextMetaStrip meta={contextMeta} /> : null}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {data.cards.map((card) => (
-              <Card key={card.id}>
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            {data.cards.slice(0, 3).map((card) => (
+              <Card key={card.id} size="sm">
+                <CardHeader className="pb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
                     <Badge variant="secondary" className="gap-1 capitalize">
                       <Wind className="size-3" aria-hidden="true" />
                       {card.room.replace("_", " ")}
                     </Badge>
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-[10px]">
                       {card.relativeCost.replace("_", " ")}
                     </Badge>
                   </div>
-                  <CardTitle className="pt-1 text-base">{card.title}</CardTitle>
-                  <CardDescription>{card.suggestedAction}</CardDescription>
+                  <CardTitle className="pt-1 text-sm">{card.title}</CardTitle>
+                  <p className="text-xs text-foreground/90">{card.suggestedAction}</p>
                 </CardHeader>
-                <CardContent className="space-y-3 text-xs">
-                  <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">
-                      {locale === "hi" ? "क्यों महत्वपूर्ण है:" : "Why it matters:"}
-                    </span>{" "}
-                    {card.whyItMatters}
-                  </p>
-                  <p className="text-muted-foreground">
-                    <span className="font-medium text-foreground">
-                      {locale === "hi" ? "वेंटिलेशन:" : "Ventilation:"}
-                    </span>{" "}
-                    {card.ventilationGuidance}
-                  </p>
-                  <WhyRecommendationToggle
-                    explanation={card.whyThisRecommendation}
-                    dataBasis={data.dataBasis}
-                    sourceIds={card.sourceIds}
-                    citations={citations}
-                    limitation={card.caution}
-                  />
+                <CardContent className="space-y-2 text-xs">
+                  <details className="rounded-lg border border-border/70 bg-muted/20 px-2.5 py-1.5 text-muted-foreground">
+                    <summary className="cursor-pointer select-none font-medium text-foreground/85">
+                      {locale === "hi" ? "वेंटिलेशन और कारण" : "Ventilation & details"}
+                    </summary>
+                    <div className="mt-2 space-y-1.5">
+                      <p>{card.whyItMatters}</p>
+                      <p className="text-foreground/85">{card.ventilationGuidance}</p>
+                      <WhyRecommendationToggle
+                        explanation={card.whyThisRecommendation}
+                        contextMeta={contextMeta ?? undefined}
+                        dataBasis={data.dataBasis}
+                        sourceIds={card.sourceIds}
+                        citations={citations}
+                        limitation={card.caution}
+                      />
+                    </div>
+                  </details>
                 </CardContent>
               </Card>
             ))}
           </div>
+
+          {data.cards.length > 3 ? (
+            <details className="rounded-2xl border border-border bg-card p-3.5 text-xs">
+              <summary className="cursor-pointer select-none font-semibold text-foreground">
+                {locale === "hi"
+                  ? `अतिरिक्त ${data.cards.length - 3} कमरे के सुझाव`
+                  : `${data.cards.length - 3} more room tips`}
+              </summary>
+              <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                {data.cards.slice(3).map((card) => (
+                  <Card key={card.id} size="sm">
+                    <CardHeader className="pb-1">
+                      <CardTitle className="text-sm">{card.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-1.5 text-xs">
+                      <p>{card.suggestedAction}</p>
+                      <p className="text-muted-foreground">{card.ventilationGuidance}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </details>
+          ) : null}
 
           <Card className="border-amber-500/30 bg-amber-500/8" size="sm">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <ShieldAlert className="size-4 text-amber-600 dark:text-amber-400" aria-hidden="true" />
                 <span>
-                  {locale === "hi" ? "इन आदतों से बचें" : "Practices to Avoid"}
+                  {locale === "hi" ? "इन आदतों से बचें" : "Things to avoid"}
                 </span>
               </CardTitle>
             </CardHeader>

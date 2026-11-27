@@ -165,7 +165,7 @@ export function HeroVisualization({
         <div className="grid grid-cols-1 gap-2.5 border-t border-white/10 bg-[#0B221D]/95 p-3.5 text-[#F5F9F7] sm:grid-cols-2">
           <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
             <div>
-              <p className="text-[11px] uppercase tracking-wider text-[#A8C9B7]">
+              <p className="whitespace-nowrap text-[10px] uppercase tracking-wider text-[#A8C9B7] sm:text-[11px]">
                 Illustrative US AQI
               </p>
               <p className="font-mono text-xl font-semibold text-[#FFB547]">

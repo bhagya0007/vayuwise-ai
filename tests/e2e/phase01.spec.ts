@@ -41,7 +41,7 @@ test.describe("Phase 01 & 01.1 Responsive UI/UX & Route Verification", () => {
     ).toBeVisible();
 
     await page.getByRole("button", { name: /Switch language to English/i }).click();
-    await page.getByRole("link", { name: /Launch Assistant/i }).first().click();
+    await page.getByRole("link", { name: /^Get Started$/i }).first().click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
   });

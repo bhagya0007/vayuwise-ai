@@ -3,6 +3,9 @@
 **Breathe Smarter. Live Greener.**  
 *PromptWars Virtual Challenge 6 — Urban Air Quality Assistant (Google for Developers & Hack2skill)*
 
+- **Live Production App:** [https://vayuwise-ai-one.vercel.app/](https://vayuwise-ai-one.vercel.app/)
+- **GitHub Repository:** [https://github.com/bhagya0007/vayuwise-ai](https://github.com/bhagya0007/vayuwise-ai)
+
 ---
 
 ## Challenge & Problem Statement
@@ -13,14 +16,14 @@ Urban households across winter-smog hotspots face severe particulate pollution e
 
 ## Core Features
 
-- **Location-Aware Air Quality Intelligence (`/dashboard`):** Live Open-Meteo / CAMS modeled `US AQI`, pollutant concentrations & 24h sparklines (`PM₂.₅`, `PM₁₀`, `NO₂`, `O₃`, `SO₂`, `CO`), subindex dominant pollutant detection, 24h/48h forecast chart across local midnight boundaries, explicit **Forecast Lowest vs. Practical Daytime Window (07:00–20:00)** guidance (never suggesting overnight/00:30 errands), and global city search + optional browser geolocation.
-- **Conversation-First AI Assistant & Daily Planner (`/assistant`, `/planner`):** Server-side Google Gemini (`@google/genai`) assistant and 6-slot chronological planner featuring viewport-pinned chat composer, Copy/Regenerate/Cancel/New Chat actions, intent-aware surgical safety overrides, verified public-health source citations, and explicit 3-state AI provenance (`Gemini AI`, `Gemini AI (Safety Adjusted)`, `Rule-Based Fallback`).
-- **Indoor Air Coach, Sustainability Hub & Community Action Center (`/indoor-air`, `/sustainability`, `/community`):**
-  - Unmeasured-indoor disclosure, room-specific cooking/filtration guidance, and exhaust-fan depressurization safety notes synced with a household checklist.
-  - Budget-aware sustainable alternatives with side-by-side comparison cards, pre-filled Impact Calculator links, and progress logging.
-  - Immediate, 7-day, and 30-day community smog plans with stakeholder categories, completion tracking, Copy, Share, and Print actions.
-- **Deterministic Environmental Impact & Exposure Lab (`/impact`):** Audited 12-mode transport CO₂e calculator (`CEA India v20.0`, `India GHG Program v1.0`, `UK DESNZ 2024`), What-If simulator, semantically colored Recharts comparison bar chart with thousands-separated axes, separate ambient outdoor concentration-time (`PM₂.₅ × duration = µg·h/m³`) comparison, duplicate-guarded Activity Tracker, and Gemini explanations restricted strictly to deterministic numbers.
-- **Personalization, Bilingual EN/HI, Printable A4 Report & Lightweight PWA (`/onboarding`, `/profile`, `/report`, `/settings`):** Optional 6-step onboarding, v2 local storage migration, full English & Hindi UI, selective A4 printable report (`@media print` with respiratory sensitivity excluded by default), static-only Service Worker (`public/sw.js` strictly bypassing `/api/*`), offline indicator, and `Delete All Local Data`.
+- **Daily Overview & Air Quality Intelligence (`/dashboard`):** Live Open-Meteo / CAMS modeled `US AQI`, top 3 immediate recommendations, 4 primary quick actions (`Plan my day`, `Improve home air`, `Find green choices`, `Calculate my impact`), 24h/48h forecast chart, explicit **Forecast Lowest vs. Practical Daytime Window (07:00–20:00)**, global city search + geolocation, and expandable progressive disclosure accordions for detailed pollutants (`PM₂.₅`, `PM₁₀`, `NO₂`, `O₃`, `SO₂`, `CO`) and trends.
+- **Ask Vayu AI & Daily Plan (`/assistant`, `/planner`):** Server-side Google Gemini (`@google/genai`) assistant producing direct 3–5 item answers with a viewport-pinned composer, mobile bottom-bar clearance, expandable `"Why this recommendation?"` explainability, intent-aware safety overrides, and a compact chronological `/planner` timeline.
+- **Home Air, Green Choices & Community (`/indoor-air`, `/sustainability`, `/community`):**
+  - Unmeasured-indoor disclosure, `"What you can do today"` checklist synced with activity tracking, top room tips + `"Things to avoid"`, and expandable room/cooking/budget controls.
+  - Clear Before -> After sustainable habit swaps with `"Estimated benefit"`, `"Calculate Impact →"` links, and expandable `"Trade-offs & Methodology"`.
+  - Concise **Today**, **This Week**, and **This Month** community smog plans with expandable stakeholder checklists, Copy, Share, and Print actions.
+- **Your Environmental Impact (`/impact`):** Audited 12-mode transport CO₂e calculator (`CEA India v20.0`, `India GHG Program v1.0`, `UK DESNZ 2024`) with a clean 2-tab layout (`Travel CO₂e Impact` vs. `Outdoor Exposure Comparison`), 4 essential inputs upfront + collapsible `Advanced Settings`, expandable `How We Calculate This`, duplicate-guarded Activity Tracker, and Gemini explanations restricted strictly to deterministic numbers.
+- **Personalization, Bilingual EN/HI, Printable Report & Lightweight PWA (`/onboarding`, `/profile`, `/report`, `/settings`):** Clean consumer sidebar (`TODAY`, `TAKE ACTION`, `ACCOUNT & TOOLS`) and 5-tab mobile bottom bar (`Home`, `Plan`, `AI`, `Impact`, `More`), optional 6-step onboarding, `Advanced Preferences` accordion on Profile, full EN/HI UI, A4 printable report (`@media print` with respiratory sensitivity excluded by default), static-only Service Worker (`public/sw.js`), and `Delete All Local Data`.
 
 ---
 
@@ -88,8 +91,8 @@ flowchart LR
 
 - `npm run typecheck` — Strict TypeScript check (`tsc --noEmit`)
 - `npm run lint` — ESLint check across app and tests
-- `npm run test` — Run all Vitest unit, integration, impact math, and 24-scenario AI safety tests (`75` tests)
-- `npm run test:e2e` — Run all Playwright Chromium E2E tests (`23` tests)
+- `npm run test` — Run all Vitest unit, integration, impact math, and 24-scenario AI safety tests (`79` tests across `9` files)
+- `npm run test:e2e` — Run all Playwright Chromium E2E tests (`28` tests across `8` files)
 
 ---
 

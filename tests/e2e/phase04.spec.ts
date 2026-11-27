@@ -62,14 +62,14 @@ test.describe("Phase 04 Personalization, Onboarding, Impact Engine & Activity Tr
   }) => {
     // Open with pre-populated URL query params (simulating Sustainability cross-link)
     await page.goto("/impact?baseline=car_petrol&alternative=metro_rail&distance=20");
-    await expect(page.getByText(/Environmental Impact & Exposure Lab/i)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Your Environmental Impact/i })).toBeVisible();
 
     // 20 * (0.163 - 0.025) * 5 * 48 = 662.4 kg CO2e annual savings
     await expect(page.getByText(/662\.4/).first()).toBeVisible();
 
     // Expand methodology drawer and confirm cited sources visible
     await page
-      .getByRole("button", { name: /Cited Emission Factors & Calculation Boundaries/i })
+      .getByRole("button", { name: /How We Calculate This/i })
       .click();
     await expect(page.getByText(/All 12 Documented Modes/i)).toBeVisible();
 
@@ -149,6 +149,6 @@ test.describe("Phase 04 Personalization, Onboarding, Impact Engine & Activity Tr
     await expect(calcLink).toBeVisible();
     await calcLink.click();
     await page.waitForURL("**/impact**");
-    await expect(page.getByText(/Environmental Impact & Exposure Lab/i)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Your Environmental Impact/i })).toBeVisible();
   });
 });

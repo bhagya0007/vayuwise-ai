@@ -57,13 +57,13 @@ const NAV_GROUPS: readonly {
       { href: "/sustainability", key: "sustainability", icon: Leaf },
       { href: "/impact", key: "impact", icon: BarChart3 },
       { href: "/community", key: "community", icon: Users },
-      { href: "/report", key: "report", icon: FileText },
     ],
   },
   {
     groupKey: "personalize",
     items: [
       { href: "/profile", key: "profile", icon: UserCog },
+      { href: "/report", key: "report", icon: FileText },
       { href: "/settings", key: "settings", icon: Settings },
     ],
   },
@@ -71,7 +71,7 @@ const NAV_GROUPS: readonly {
 
 export function WorkspaceShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { dict, selectedLocation } = useAppPreferences();
+  const { dict, locale, selectedLocation } = useAppPreferences();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -278,10 +278,70 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
 
         <main
           id="workspace-main"
-          className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 sm:px-6 sm:py-7"
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-5 pb-24 sm:px-6 sm:py-7 lg:pb-8"
         >
           {children}
         </main>
+
+        {/* Compact Mobile Bottom Navigation: Home, Plan, AI, Impact, More */}
+        <nav
+          aria-label="Mobile bottom navigation"
+          className="print:hidden fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur-md lg:hidden"
+        >
+          <div className="mx-auto grid max-w-md grid-cols-5 items-center px-1 py-1.5 text-[11px] font-medium">
+            {[
+              {
+                href: "/dashboard",
+                label: locale === "hi" ? "होम" : "Home",
+                icon: Home,
+              },
+              {
+                href: "/planner",
+                label: locale === "hi" ? "योजना" : "Plan",
+                icon: CalendarClock,
+              },
+              {
+                href: "/assistant",
+                label: "AI",
+                icon: Bot,
+              },
+              {
+                href: "/impact",
+                label: locale === "hi" ? "प्रभाव" : "Impact",
+                icon: BarChart3,
+              },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = pathname === tab.href;
+              return (
+                <Link
+                  key={tab.href}
+                  href={tab.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors",
+                    active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                  <span>{tab.label}</span>
+                </Link>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-expanded={mobileMenuOpen}
+              className={cn(
+                "flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors",
+                mobileMenuOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Menu className="size-4" aria-hidden="true" />
+              <span>{locale === "hi" ? "अधिक" : "More"}</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );

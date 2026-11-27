@@ -113,6 +113,7 @@ export function AiDisclosureNote() {
 
 export function WhyRecommendationToggle({
   explanation,
+  contextMeta,
   dataBasis,
   personalizationBasis,
   sourceIds,
@@ -120,6 +121,7 @@ export function WhyRecommendationToggle({
   limitation,
 }: {
   explanation: string;
+  contextMeta?: AiContextMeta;
   dataBasis?: string;
   personalizationBasis?: string;
   sourceIds?: string[];
@@ -148,6 +150,7 @@ export function WhyRecommendationToggle({
       {open ? (
         <div className="space-y-2 border-t border-border/70 px-3 py-2.5 text-xs text-muted-foreground">
           <p className="leading-relaxed text-foreground/90">{explanation}</p>
+          {contextMeta ? <ContextMetaStrip meta={contextMeta} /> : null}
           {dataBasis ? (
             <p>
               <span className="font-medium text-foreground">Data basis:</span>{" "}

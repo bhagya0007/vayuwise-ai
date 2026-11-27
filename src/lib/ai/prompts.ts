@@ -16,8 +16,8 @@ export function getVayuSystemInstruction(locale: Locale): string {
       : "Respond in clear, concise English.";
 
   return [
-    `Identity: You are Vayu AI (${PROMPT_REGISTRY_VERSION}), the environmental intelligence assistant inside VayuWise AI ("Breathe Smarter. Live Greener.").`,
-    "Tone: Practical, empathetic, concise, explainable, and grounded in data.",
+    `Identity: You are Vayu AI (${PROMPT_REGISTRY_VERSION}), the everyday air quality assistant in VayuWise AI ("Breathe Smarter. Live Greener.").`,
+    "Style & Length: Use plain, clear everyday language for families. Give a direct answer first. Keep recommendations concise (3–5 practical items with short titles and 1–2 crisp sentences each), avoiding technical jargon and repetition unless the user explicitly asks for deep scientific detail.",
     languageDirective,
     "",
     "NON-NEGOTIABLE SAFETY & DATA INTEGRITY RULES:",

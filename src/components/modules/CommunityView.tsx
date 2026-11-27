@@ -220,25 +220,18 @@ export function CommunityView() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="print:hidden space-y-4">
-        <AiDisclosureNote />
-        <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
-      </div>
-
+    <div className="space-y-4">
       <Card className="print:hidden">
-        <CardHeader>
+        <CardHeader className="pb-3">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
-              <CardTitle className="text-2xl font-semibold">
-                {locale === "hi"
-                  ? "AI सामुदायिक कार्य केंद्र"
-                  : "AI Community Action Center"}
-              </CardTitle>
+              <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">
+                {locale === "hi" ? "सामुदायिक योजना" : "Community Action Plan"}
+              </h1>
               <CardDescription>
                 {locale === "hi"
-                  ? `${selectedLocation.name} में रिहायशी सोसायटी, स्कूल, कॉलेज और कार्यस्थलों के लिए चरणबद्ध स्मॉग-रोकथाम योजना बनाएं।`
-                  : `Build coordinated smog-response plans for societies, schools, colleges, workplaces, and neighborhoods in ${selectedLocation.name}.`}
+                  ? `${selectedLocation.name} के स्कूल, सोसायटी या कार्यस्थल के लिए व्यावहारिक योजना।`
+                  : `Practical smog readiness plan for societies, schools, or workplaces in ${selectedLocation.name}.`}
               </CardDescription>
             </div>
             <Button
@@ -256,113 +249,126 @@ export function CommunityView() {
           </div>
         </CardHeader>
 
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <div className="space-y-1.5">
-            <Label htmlFor="comm-type">
-              {locale === "hi" ? "समुदाय प्रकार" : "Community Type"}
-            </Label>
-            <select
-              id="comm-type"
-              value={communityType}
-              onChange={(e) =>
-                setCommunityType(e.target.value as typeof communityType)
-              }
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="residential_society">
-                {locale === "hi" ? "रिहायशी सोसायटी (RWA)" : "Residential Society"}
-              </option>
-              <option value="school">
-                {locale === "hi" ? "स्कूल" : "School"}
-              </option>
-              <option value="college">
-                {locale === "hi" ? "कॉलेज / कैंपस" : "College / Campus"}
-              </option>
-              <option value="workplace">
-                {locale === "hi" ? "कार्यस्थल" : "Workplace"}
-              </option>
-              <option value="neighborhood_group">
-                {locale === "hi" ? "मोहल्ला समूह" : "Neighborhood Group"}
-              </option>
-            </select>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="space-y-1">
+              <Label htmlFor="comm-type" className="text-xs">
+                {locale === "hi" ? "समुदाय प्रकार" : "Community Type"}
+              </Label>
+              <select
+                id="comm-type"
+                value={communityType}
+                onChange={(e) =>
+                  setCommunityType(e.target.value as typeof communityType)
+                }
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="residential_society">
+                  {locale === "hi" ? "रिहायशी सोसायटी (RWA)" : "Residential Society"}
+                </option>
+                <option value="school">
+                  {locale === "hi" ? "स्कूल" : "School"}
+                </option>
+                <option value="college">
+                  {locale === "hi" ? "कॉलेज / कैंपस" : "College / Campus"}
+                </option>
+                <option value="workplace">
+                  {locale === "hi" ? "कार्यस्थल" : "Workplace"}
+                </option>
+                <option value="neighborhood_group">
+                  {locale === "hi" ? "मोहल्ला समूह" : "Neighborhood Group"}
+                </option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="comm-pop" className="text-xs">
+                {locale === "hi" ? "अनुमानित सदस्य संख्या" : "Approx. Population"}
+              </Label>
+              <Input
+                id="comm-pop"
+                type="number"
+                min={10}
+                max={50000}
+                value={approxPopulation}
+                onChange={(e) =>
+                  setApproxPopulation(Math.max(10, Number(e.target.value)))
+                }
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="comm-budget" className="text-xs">
+                {locale === "hi" ? "बजट" : "Budget"}
+              </Label>
+              <select
+                id="comm-budget"
+                value={budgetTier}
+                onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
+                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+              >
+                <option value="free">
+                  {locale === "hi" ? "शून्य बजट" : "Zero Budget"}
+                </option>
+                <option value="low_cost">
+                  {locale === "hi" ? "कम बजट" : "Low Budget"}
+                </option>
+                <option value="investment">
+                  {locale === "hi" ? "समर्पित बजट" : "Dedicated Budget"}
+                </option>
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="comm-pop">
-              {locale === "hi" ? "अनुमानित सदस्य संख्या" : "Approx. Population"}
-            </Label>
-            <Input
-              id="comm-pop"
-              type="number"
-              min={10}
-              max={50000}
-              value={approxPopulation}
-              onChange={(e) =>
-                setApproxPopulation(Math.max(10, Number(e.target.value)))
-              }
-            />
-          </div>
+          <details className="text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none font-medium text-foreground/80">
+              {locale === "hi" ? "समय-सीमा, संसाधन और AI गोपनीयता" : "Timeframe, resources & AI privacy"}
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="comm-time" className="text-xs">
+                    {locale === "hi" ? "समय-सीमा" : "Timeframe"}
+                  </Label>
+                  <select
+                    id="comm-time"
+                    value={timeframe}
+                    onChange={(e) => setTimeframe(e.target.value as typeof timeframe)}
+                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="immediate_48h">
+                      {locale === "hi" ? "तत्काल (48 घंटे)" : "Immediate (48h)"}
+                    </option>
+                    <option value="weekly">
+                      {locale === "hi" ? "साप्ताहिक (7-दिन)" : "7-Day Rollout"}
+                    </option>
+                    <option value="winter_season">
+                      {locale === "hi" ? "30-दिवसीय / शीतकालीन" : "30-Day / Winter"}
+                    </option>
+                  </select>
+                </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="comm-budget">
-              {locale === "hi" ? "बजट" : "Estimated Budget"}
-            </Label>
-            <select
-              id="comm-budget"
-              value={budgetTier}
-              onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="free">
-                {locale === "hi" ? "शून्य बजट" : "Zero Budget"}
-              </option>
-              <option value="low_cost">
-                {locale === "hi" ? "कम बजट" : "Low Budget"}
-              </option>
-              <option value="investment">
-                {locale === "hi" ? "समर्पित बजट" : "Dedicated Budget"}
-              </option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="comm-time">
-              {locale === "hi" ? "समय-सीमा" : "Timeframe"}
-            </Label>
-            <select
-              id="comm-time"
-              value={timeframe}
-              onChange={(e) => setTimeframe(e.target.value as typeof timeframe)}
-              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-            >
-              <option value="immediate_48h">
-                {locale === "hi" ? "तत्काल (48 घंटे)" : "Immediate (48h)"}
-              </option>
-              <option value="weekly">
-                {locale === "hi" ? "साप्ताहिक (7-दिन)" : "7-Day Rollout"}
-              </option>
-              <option value="winter_season">
-                {locale === "hi" ? "30-दिवसीय / शीतकालीन" : "30-Day / Winter"}
-              </option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="comm-resources">
-              {locale === "hi" ? "उपलब्ध संसाधन" : "Available Resources"}
-            </Label>
-            <Input
-              id="comm-resources"
-              value={availableResources}
-              onChange={(e) => setAvailableResources(e.target.value)}
-              placeholder={
-                locale === "hi"
-                  ? "जैसे: नोटिस बोर्ड, सुरक्षा गार्ड"
-                  : "e.g. notice board, club room"
-              }
-              maxLength={300}
-            />
-          </div>
+                <div className="space-y-1">
+                  <Label htmlFor="comm-resources" className="text-xs">
+                    {locale === "hi" ? "उपलब्ध संसाधन" : "Available Resources"}
+                  </Label>
+                  <Input
+                    id="comm-resources"
+                    value={availableResources}
+                    onChange={(e) => setAvailableResources(e.target.value)}
+                    placeholder={
+                      locale === "hi"
+                        ? "जैसे: नोटिस बोर्ड, सुरक्षा गार्ड"
+                        : "e.g. notice board, club room"
+                    }
+                    maxLength={300}
+                  />
+                </div>
+              </div>
+              <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
+              <AiDisclosureNote />
+            </div>
+          </details>
         </CardContent>
       </Card>
 
@@ -458,26 +464,19 @@ export function CommunityView() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             {[
               {
-                title:
-                  locale === "hi"
-                    ? "तत्काल स्मॉग प्रतिक्रिया"
-                    : "Immediate Smog Response",
+                title: locale === "hi" ? "आज" : "Today",
                 items: plan.immediateActions,
               },
               {
-                title:
-                  locale === "hi" ? "7-दिवसीय कार्य योजना" : "7-Day Action Plan",
+                title: locale === "hi" ? "इस सप्ताह" : "This Week",
                 items: plan.weeklyActions,
               },
               {
-                title:
-                  locale === "hi"
-                    ? "30-दिवसीय सुधार योजना"
-                    : "30-Day Improvement Plan",
+                title: locale === "hi" ? "इस महीने" : "This Month",
                 items: plan.longTermActions,
               },
             ].map((section) => (
-              <Card key={section.title}>
+              <Card key={section.title} size="sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{section.title}</CardTitle>
                 </CardHeader>
@@ -495,93 +494,79 @@ export function CommunityView() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between gap-2 text-base">
-                  <span className="flex items-center gap-2">
+          <details className="rounded-2xl border border-border bg-card p-4 text-xs">
+            <summary className="cursor-pointer select-none text-sm font-semibold text-foreground">
+              {locale === "hi"
+                ? `जिम्मेदारियाँ, चेकलिस्ट (${completedChecklist.length}/${plan.implementationChecklist.length}) और स्वास्थ्य नोट्स`
+                : `Checklist (${completedChecklist.length}/${plan.implementationChecklist.length}), roles & safety notes`}
+            </summary>
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2.5">
+                  <p className="flex items-center gap-1.5 font-semibold text-foreground">
                     <Users className="size-4 text-primary" aria-hidden="true" />
-                    <span>
-                      {locale === "hi"
-                        ? "जिम्मेदारियाँ व पूर्णता चेकलिस्ट"
-                        : "Stakeholders & Completion Checklist"}
+                    {locale === "hi" ? "जिम्मेदार श्रेणियाँ:" : "Stakeholders:"}{" "}
+                    <span className="font-normal text-muted-foreground">
+                      {plan.responsibilityCategories.join(" · ")}
                     </span>
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {completedChecklist.length}/{plan.implementationChecklist.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-xs sm:text-sm">
-                <div className="space-y-1">
-                  <p className="font-semibold text-foreground">
-                    {locale === "hi" ? "जिम्मेदार श्रेणियाँ:" : "Stakeholder Categories:"}
                   </p>
-                  <p className="text-muted-foreground">
-                    {plan.responsibilityCategories.join(" · ")}
-                  </p>
+                  <div className="space-y-1.5">
+                    {plan.implementationChecklist.map((c) => {
+                      const checked = completedChecklist.includes(c);
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          aria-pressed={checked}
+                          onClick={() => toggleChecklistItem(c)}
+                          className={`flex w-full items-start gap-2 rounded-lg border p-2 text-left text-xs transition-colors ${
+                            checked
+                              ? "border-primary/40 bg-primary/10 text-foreground"
+                              : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40"
+                          }`}
+                        >
+                          {checked ? (
+                            <CheckSquare className="mt-0.5 size-3.5 shrink-0 text-primary" />
+                          ) : (
+                            <Square className="mt-0.5 size-3.5 shrink-0" />
+                          )}
+                          <span>{c}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  {plan.implementationChecklist.map((c) => {
-                    const checked = completedChecklist.includes(c);
-                    return (
-                      <button
-                        key={c}
-                        type="button"
-                        aria-pressed={checked}
-                        onClick={() => toggleChecklistItem(c)}
-                        className={`flex w-full items-start gap-2 rounded-lg border p-2 text-left text-xs transition-colors ${
-                          checked
-                            ? "border-primary/40 bg-primary/10 text-foreground"
-                            : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40"
-                        }`}
-                      >
-                        {checked ? (
-                          <CheckSquare className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                        ) : (
-                          <Square className="mt-0.5 size-3.5 shrink-0" />
-                        )}
-                        <span>{c}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
-                  <span>
+                <div className="space-y-3 text-muted-foreground">
+                  <p className="flex items-center gap-1.5 font-semibold text-foreground">
+                    <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
                     {locale === "hi"
                       ? "अपेक्षित परिणाम व स्वास्थ्य सुरक्षा"
-                      : "Qualitative Outcomes & Health Precautions"}
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-xs sm:text-sm text-muted-foreground">
-                <ul className="space-y-1.5">
-                  {plan.expectedQualitativeOutcomes.map((o) => (
-                    <li key={o}>• {o}</li>
-                  ))}
-                </ul>
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
-                  {plan.healthAndSafetyNotes.map((n) => (
-                    <p key={n}>• {n}</p>
-                  ))}
+                      : "Outcomes & Health Safety"}
+                  </p>
+                  <ul className="space-y-1">
+                    {plan.expectedQualitativeOutcomes.map((o) => (
+                      <li key={o}>• {o}</li>
+                    ))}
+                  </ul>
+                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+                    {plan.healthAndSafetyNotes.map((n) => (
+                      <p key={n}>• {n}</p>
+                    ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
 
-          <WhyRecommendationToggle
-            explanation={plan.whyThisRecommendation}
-            dataBasis={plan.dataBasis}
-            sourceIds={plan.sourceIds}
-            citations={citations}
-            limitation={plan.disclaimer}
-          />
+              <WhyRecommendationToggle
+                explanation={plan.whyThisRecommendation}
+                contextMeta={contextMeta ?? undefined}
+                dataBasis={plan.dataBasis}
+                sourceIds={plan.sourceIds}
+                citations={citations}
+                limitation={plan.disclaimer}
+              />
+            </div>
+          </details>
         </div>
       ) : (
         <EmptyStateCard

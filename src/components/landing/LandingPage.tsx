@@ -8,7 +8,7 @@ import {
   ArrowRight,
   BarChart3,
   CalendarClock,
-  CloudFog,
+  ChevronDown,
   Leaf,
   Lock,
   Menu,
@@ -49,7 +49,7 @@ export function LandingPage() {
 
   return (
     <div id="top" className="min-h-screen flex flex-col bg-background text-foreground">
-      {/* Public Navigation Bar */}
+      {/* Compact Header */}
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/" className="shrink-0">
@@ -78,7 +78,7 @@ export function LandingPage() {
             <LocaleToggle />
             <ThemeToggle />
             <Link
-              href="/dashboard"
+              href="/assistant"
               className={cn(
                 buttonVariants({ size: "sm" }),
                 "hidden sm:inline-flex gap-1.5"
@@ -124,7 +124,7 @@ export function LandingPage() {
                 {landing.nav.about}
               </a>
               <Link
-                href="/dashboard"
+                href="/assistant"
                 onClick={() => setMobileNavOpen(false)}
                 className={cn(buttonVariants({ size: "sm" }), "mt-1 w-full justify-center")}
               >
@@ -136,17 +136,17 @@ export function LandingPage() {
       </header>
 
       <main className="flex-1">
-        {/* Cinematic Hero */}
+        {/* 1. Hero Section */}
         <section className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-12 lg:gap-12">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
-            className="space-y-6 lg:col-span-6"
+            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="space-y-5 lg:col-span-6"
           >
             <Badge
               variant="outline"
-              className="h-auto max-w-full whitespace-normal gap-1.5 border-emerald-500/35 bg-emerald-500/10 py-1 text-emerald-800 dark:text-emerald-300"
+              className="h-auto gap-1.5 border-emerald-500/35 bg-emerald-500/10 py-1 text-emerald-800 dark:text-emerald-300"
             >
               <Sparkles className="size-3.5 shrink-0" aria-hidden="true" />
               <span>{landing.hero.badge}</span>
@@ -157,12 +157,12 @@ export function LandingPage() {
                 <span className="block">{landing.hero.headlineLine1}</span>
                 <span className="block text-primary">{landing.hero.headlineLine2}</span>
               </h1>
-              <p className="text-base font-medium text-foreground/85 sm:text-xl">
+              <p className="text-base font-medium text-foreground/90 sm:text-xl">
                 {landing.hero.supportingHeadline}
               </p>
             </div>
 
-            <p className="max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <p className="max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
               {landing.hero.description}
             </p>
 
@@ -174,24 +174,24 @@ export function LandingPage() {
                 <span>{landing.hero.primaryCta}</span>
                 <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
-              <Link
-                href="/onboarding"
+              <a
+                href="#features"
                 className={cn(
                   buttonVariants({ variant: "outline", size: "lg" }),
                   "h-11 px-5"
                 )}
               >
-                {locale === "hi" ? "गाइडेड सेटअप" : "Guided Setup"}
-              </Link>
-              <a
-                href="#features"
+                {landing.hero.secondaryCta}
+              </a>
+              <Link
+                href="/onboarding"
                 className={cn(
                   buttonVariants({ variant: "ghost", size: "lg" }),
                   "h-11 px-4 text-muted-foreground hover:text-foreground"
                 )}
               >
-                {landing.hero.secondaryCta}
-              </a>
+                {locale === "hi" ? "त्वरित सेटअप" : "Guided Setup"}
+              </Link>
             </div>
           </motion.div>
 
@@ -204,190 +204,48 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Interactive Product Preview Strip */}
-        <section className="border-y border-border bg-secondary/45">
-          <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-12 sm:px-6">
-            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-              <div className="max-w-2xl space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  {landing.preview.eyebrow}
-                </p>
-                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                  {landing.preview.title}
-                </h2>
-                <p className="text-sm text-muted-foreground sm:text-base">
-                  {landing.preview.description}
-                </p>
-              </div>
-              <Link
-                href="/dashboard"
-                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-fit gap-1.5")}
-              >
-                <span>{landing.nav.launchAssistant}</span>
-                <ArrowRight className="size-3.5" aria-hidden="true" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm lg:grid-cols-12">
-              <div className="flex flex-col justify-between gap-4 rounded-xl border border-border bg-muted/40 p-4 lg:col-span-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-muted-foreground">
-                    {locale === "hi" ? "लाइव मॉडल्ड स्रोत" : "Live Modeled Source"}
-                  </span>
-                  <Badge variant="secondary">Open-Meteo / CAMS</Badge>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">
-                    {locale === "hi" ? "नई दिल्ली · US AQI" : "New Delhi · US AQI"}
-                  </p>
-                  <p className="mt-1 font-mono text-3xl font-semibold text-foreground">
-                    {locale === "hi" ? "लाइव फ़ीड" : "Live Feed"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {locale === "hi"
-                      ? "सब-इंडेक्स प्रमुख प्रदूषक पहचान + 48 घंटे का पूर्वानुमान"
-                      : "Subindex dominant pollutant detection + 48h outlook"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-8">
-                {[
-                  {
-                    code: "PM₂.₅",
-                    note:
-                      locale === "hi"
-                        ? "सूक्ष्म कण (µg/m³)"
-                        : "Fine particulates (µg/m³)",
-                  },
-                  {
-                    code: "PM₁₀",
-                    note:
-                      locale === "hi"
-                        ? "मोटे धूल कण (µg/m³)"
-                        : "Coarse dust (µg/m³)",
-                  },
-                  {
-                    code: "NO₂",
-                    note:
-                      locale === "hi"
-                        ? "ट्रैफ़िक नाइट्रोजन डाइऑक्साइड"
-                        : "Traffic nitrogen dioxide",
-                  },
-                  {
-                    code: "O₃",
-                    note: locale === "hi" ? "सतही ओज़ोन" : "Surface ozone",
-                  },
-                  {
-                    code: locale === "hi" ? "48 घंटे वक्र" : "48h Curve",
-                    note:
-                      locale === "hi"
-                        ? "मध्यरात्रि-सचेत स्वच्छ विंडो"
-                        : "Midnight-aware windows",
-                  },
-                  {
-                    code: locale === "hi" ? "स्वास्थ्य पहले" : "Health First",
-                    note:
-                      locale === "hi"
-                        ? "नियम-आधारित सुरक्षा नियम"
-                        : "Rule-based safety rules",
-                  },
-                ].map((tile) => (
-                  <div
-                    key={tile.code}
-                    className="rounded-xl border border-border bg-background/60 p-3.5"
-                  >
-                    <p className="font-mono text-sm font-semibold text-primary">
-                      {tile.code}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{tile.note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Environmental Storytelling / Problem Section */}
-        <section id="problem" className="mx-auto w-full max-w-7xl space-y-8 px-4 py-14 sm:px-6">
-          <div className="max-w-2xl space-y-2.5">
-            <p className="text-xs font-semibold uppercase tracking-wider text-primary">
-              {landing.problem.eyebrow}
-            </p>
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {landing.problem.title}
-            </h2>
-            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-              {landing.problem.description}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {landing.problem.cards.map((card) => (
-              <Card key={card.title} className="transition-colors hover:border-primary/40">
-                <CardHeader>
-                  <div className="mb-1 flex size-9 items-center justify-center rounded-lg bg-amber-500/12 text-amber-700 dark:text-[#FFB547]">
-                    <CloudFog className="size-4" aria-hidden="true" />
-                  </div>
-                  <CardTitle className="text-base">{card.title}</CardTitle>
-                  <CardDescription className="leading-relaxed">
-                    {card.body}
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* Bento-Grid Feature Showcase */}
+        {/* 2. Product Features */}
         <section id="features" className="border-y border-border bg-secondary/35">
-          <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-14 sm:px-6">
-            <div className="max-w-2xl space-y-2.5">
+          <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-12 sm:px-6">
+            <div className="max-w-2xl space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">
                 {landing.features.eyebrow}
               </p>
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 {landing.features.title}
               </h2>
-              <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              <p className="text-sm text-muted-foreground sm:text-base">
                 {landing.features.description}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {landing.features.items.map((item, idx) => {
                 const Icon = FEATURE_ICONS[idx % FEATURE_ICONS.length];
-                const spanClass =
-                  idx === 0 || idx === 3
-                    ? "md:col-span-7"
-                    : "md:col-span-5";
                 return (
                   <Link
-                    key={item.href}
+                    key={item.title}
                     href={item.href}
-                    className={cn(
-                      "group block rounded-xl focus-visible:outline-none",
-                      spanClass
-                    )}
+                    className="group block rounded-2xl focus-visible:outline-none"
                   >
-                    <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/50">
-                      <CardHeader>
+                    <Card className="h-full transition-colors group-hover:border-primary/45">
+                      <CardHeader className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/12 text-primary">
+                          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/12 text-primary">
                             <Icon className="size-4" aria-hidden="true" />
                           </div>
-                          <Badge variant="outline" className="text-[11px]">
+                          <Badge variant="secondary" className="text-[11px] font-normal">
                             {item.tag}
                           </Badge>
                         </div>
-                        <CardTitle className="flex items-center justify-between gap-2 pt-2 text-base">
+                        <CardTitle className="flex items-center justify-between text-base">
                           <span>{item.title}</span>
                           <ArrowRight
-                            className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                            className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
                             aria-hidden="true"
                           />
                         </CardTitle>
-                        <CardDescription className="leading-relaxed">
+                        <CardDescription className="text-xs sm:text-sm leading-relaxed">
                           {item.body}
                         </CardDescription>
                       </CardHeader>
@@ -399,9 +257,9 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Connected 4-Step How It Works */}
-        <section id="how-it-works" className="mx-auto w-full max-w-7xl space-y-8 px-4 py-14 sm:px-6">
-          <div className="max-w-2xl space-y-2">
+        {/* 3. How It Works (3 Steps) */}
+        <section id="how-it-works" className="mx-auto w-full max-w-7xl space-y-6 px-4 py-12 sm:px-6">
+          <div className="max-w-2xl space-y-1.5">
             <p className="text-xs font-semibold uppercase tracking-wider text-primary">
               {landing.howItWorks.eyebrow}
             </p>
@@ -410,9 +268,9 @@ export function LandingPage() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {landing.howItWorks.steps.map((step) => (
-              <Card key={step.step} className="relative">
+              <Card key={step.step}>
                 <CardHeader>
                   <span className="font-mono text-xs font-semibold text-primary">
                     {step.step}
@@ -427,17 +285,17 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Trust & Transparency */}
+        {/* 4. Trust and Transparency (+ Progressive Disclosure Methodology) */}
         <section id="trust" className="border-t border-border bg-secondary/35">
-          <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-14 sm:px-6">
-            <div className="max-w-3xl space-y-2.5">
+          <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-12 sm:px-6">
+            <div className="max-w-3xl space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wider text-primary">
                 {landing.trust.eyebrow}
               </p>
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
                 {landing.trust.title}
               </h2>
-              <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              <p className="text-sm text-muted-foreground sm:text-base">
                 {landing.trust.description}
               </p>
             </div>
@@ -447,14 +305,14 @@ export function LandingPage() {
                 const Icon = idx === 0 ? Activity : idx === 1 ? ShieldCheck : Lock;
                 return (
                   <Card key={pillar.title}>
-                    <CardHeader>
+                    <CardHeader className="pb-2">
                       <div className="mb-1 flex size-9 items-center justify-center rounded-lg bg-emerald-500/12 text-emerald-700 dark:text-[#34E8A5]">
                         <Icon className="size-4" aria-hidden="true" />
                       </div>
                       <CardTitle className="text-base">{pillar.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm leading-relaxed text-muted-foreground">
+                      <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground">
                         {pillar.body}
                       </p>
                     </CardContent>
@@ -463,9 +321,32 @@ export function LandingPage() {
               })}
             </div>
 
-            {/* Final CTA */}
-            <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-primary/30 bg-card p-6 sm:flex-row sm:items-center sm:p-8">
-              <div className="max-w-2xl space-y-1.5">
+            <details className="rounded-2xl border border-border bg-card px-5 py-3.5 text-xs text-muted-foreground">
+              <summary className="flex cursor-pointer list-none items-center justify-between font-medium text-foreground">
+                <span>
+                  {locale === "hi"
+                    ? "पद्धति और डेटा स्रोत विवरण (Open-Meteo, CPCB, उत्सर्जन कारक)"
+                    : "Methodology & Data Sources (Open-Meteo, CPCB Distinction, Audited Emission Factors)"}
+                </span>
+                <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
+              </summary>
+              <div className="mt-3 space-y-2 border-t border-border/60 pt-3 leading-relaxed">
+                <p>
+                  {locale === "hi"
+                    ? "वायु गुणवत्ता Open-Meteo / CAMS क्षेत्रीय मॉडल पर आधारित US AQI दिखाती है, जो आधिकारिक भारतीय CPCB NAQI ग्राउंड स्टेशनों से भिन्न है।"
+                    : "Air quality uses Open-Meteo / CAMS atmospheric modeled US AQI — explicitly separate from official Indian CPCB NAQI station monitors."}
+                </p>
+                <p>
+                  {locale === "hi"
+                    ? "यात्रा उत्सर्जन गणना CEA इंडिया v20.0 (0.727 kg CO₂/kWh), इंडिया GHG प्रोग्राम v1.0 और UK DESNZ 2024 पर आधारित है और व्यक्तिगत श्वसन जोखिम से अलग रखी जाती है।"
+                    : "Travel impact math uses audited factors from CEA India v20.0 (0.727 kg CO₂/kWh), India GHG Program v1.0, and UK DESNZ 2024, strictly separated from outdoor inhalation exposure."}
+                </p>
+              </div>
+            </details>
+
+            {/* 5. Final CTA */}
+            <div className="flex flex-col items-start justify-between gap-4 rounded-2xl border border-primary/30 bg-card p-6 sm:flex-row sm:items-center">
+              <div className="max-w-2xl space-y-1">
                 <h3 className="text-xl font-semibold tracking-tight">
                   {landing.finalCta.title}
                 </h3>
@@ -487,7 +368,7 @@ export function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-border bg-card/80">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-7 sm:px-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <VayuLogo subtitle={dict.tagline} />
             <div className="flex flex-wrap gap-4 text-xs font-medium text-muted-foreground">
@@ -501,7 +382,7 @@ export function LandingPage() {
                 {dict.nav.impact}
               </Link>
               <Link href="/report" className="hover:text-foreground">
-                {locale === "hi" ? "प्रिंटेबल रिपोर्ट" : "Printable Report"}
+                {dict.nav.report}
               </Link>
               <Link href="/profile" className="hover:text-foreground">
                 {dict.nav.profile}

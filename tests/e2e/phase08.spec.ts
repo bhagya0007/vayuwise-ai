@@ -1,9 +1,24 @@
 import { expect, test } from "@playwright/test";
+import { getDemoForecast } from "@/lib/demo/air-quality-demo";
 
 test.describe("Phase 08 Release Candidate Verification", () => {
   test("dashboard displays Forecast Lowest vs Practical Daytime Window cleanly without suggesting 00:30 outdoor errands", async ({
     page,
   }) => {
+    const forecast = getDemoForecast("new-delhi");
+    await page.route("**/api/air-quality**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          forecast: {
+            ...forecast,
+            provenance: { ...forecast.provenance, dataSourceType: "modeled", freshnessStatus: "fresh", isStale: false },
+          },
+        }),
+      });
+    });
     await page.goto("/dashboard");
     await expect(
       page.getByText(/Practical Daytime Window/i)

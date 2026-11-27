@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { getDemoForecast } from "@/lib/demo/air-quality-demo";
 
 test.describe("Phase 05–07 UI Fixes, Conversation-First Assistant, Report & PWA E2E", () => {
   test("/impact initializes to profile's 14 km default instead of 0 km and avoids -0.00 when zeroed", async ({
@@ -40,6 +41,20 @@ test.describe("Phase 05–07 UI Fixes, Conversation-First Assistant, Report & PW
   test("/report renders A4 printable summary with optional sensitivity toggle OFF by default", async ({
     page,
   }) => {
+    const forecast = getDemoForecast("new-delhi");
+    await page.route("**/api/air-quality**", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          forecast: {
+            ...forecast,
+            provenance: { ...forecast.provenance, dataSourceType: "modeled", freshnessStatus: "fresh", isStale: false },
+          },
+        }),
+      });
+    });
     await page.goto("/report");
     await expect(
       page.getByText(/Printable Personalized Air Quality Report/i)
@@ -64,7 +79,7 @@ test.describe("Phase 05–07 UI Fixes, Conversation-First Assistant, Report & PW
     await expect(firstCheck).toHaveAttribute("aria-pressed", "true");
 
     await page.goto("/community");
-    await expect(page.getByText(/Community Action Center/i)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: /Community Action Plan/i })).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Generate Action Plan/i }).first()
     ).toBeVisible();
