@@ -1,0 +1,488 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Leaf,
+  RefreshCw,
+  ShieldAlert,
+} from "lucide-react";
+import {
+  AiDisclosureNote,
+  AiErrorRecoveryCard,
+  AiProvenanceBadge,
+  ContextMetaStrip,
+  WhyRecommendationToggle,
+  type AiContextMeta,
+} from "@/components/ai/AiTransparencyWidgets";
+import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
+import { EmptyStateCard } from "@/components/common/Controls";
+import { useAppPreferences } from "@/components/providers/AppProviders";
+import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
+import type { AiSustainabilityResponse } from "@/lib/ai/schemas";
+import { compareTransportScenarios } from "@/lib/impact/transport-calculator";
+import { normalizeLegacyCommuteMode } from "@/lib/personalization/profile-storage";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import type { BudgetTier, CommuteMode } from "@/types/domain";
+
+function inferAltModeFromText(
+  text: string
+): Exclude<CommuteMode, "walk_cycle"> {
+  const lower = text.toLowerCase();
+  if (lower.includes("remote") || lower.includes("work from home") || lower.includes("wfh")) {
+    return "work_from_home";
+  }
+  if (lower.includes("carpool")) return "carpool";
+  if (lower.includes("bus")) return "bus";
+  if (lower.includes("electric") && lower.includes("two")) return "two_wheeler_electric";
+  if (lower.includes("electric") && lower.includes("car")) return "car_electric";
+  return "metro_rail";
+}
+
+export function SustainabilityView() {
+  const {
+    selectedLocation,
+    profile,
+    locale,
+    recommendationFingerprint,
+    logActivity,
+    addToast,
+  } = useAppPreferences();
+
+  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(
+    null
+  );
+  const [focusArea, setFocusArea] = useState<
+    | "all"
+    | "daily_commute"
+    | "school_college_travel"
+    | "household_energy"
+    | "waste_practices"
+    | "community_sustainability"
+  >("all");
+  const [budgetTier, setBudgetTier] = useState<BudgetTier>(profile.budgetTier);
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<AiSustainabilityResponse | null>(null);
+  const [aiGenerated, setAiGenerated] = useState(false);
+  const [provenanceMode, setProvenanceMode] = useState<
+    "gemini" | "gemini_safety_adjusted" | "rule_based_fallback" | undefined
+  >(undefined);
+  const [modelUsed, setModelUsed] = useState<string | undefined>(undefined);
+  const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
+  const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
+  const [errorState, setErrorState] = useState<{
+    message: string;
+    errorCode?: string;
+    fallback?: AiSustainabilityResponse;
+    contextMeta?: AiContextMeta;
+  } | null>(null);
+
+  const normalizedUserBase = normalizeLegacyCommuteMode(profile.primaryCommute);
+  const effectiveBaseMode: Exclude<CommuteMode, "walk_cycle"> =
+    normalizedUserBase === "metro_rail" || normalizedUserBase === "work_from_home"
+      ? "car_petrol"
+      : normalizedUserBase;
+
+  const generateAlternatives = async () => {
+    setLoading(true);
+    setErrorState(null);
+    try {
+      const res = await fetch("/api/ai/sustainability", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          locale,
+          location: {
+            id: selectedLocation.id,
+            name: selectedLocation.name,
+            region: selectedLocation.region,
+            country: selectedLocation.country,
+            countryCode: selectedLocation.countryCode,
+            latitude: selectedLocation.latitude,
+            longitude: selectedLocation.longitude,
+            timezone: selectedLocation.timezone,
+          },
+          profile,
+          focusArea,
+          budgetTier,
+        }),
+      });
+
+      const body = (await res.json()) as {
+        ok: boolean;
+        data?: AiSustainabilityResponse;
+        fallbackData?: AiSustainabilityResponse;
+        aiGenerated?: boolean;
+        provenanceMode?: "gemini" | "gemini_safety_adjusted" | "rule_based_fallback";
+        modelUsed?: string;
+        citations?: VerifiedKnowledgeSource[];
+        contextMeta?: AiContextMeta;
+        errorCode?: string;
+        message?: string;
+      };
+
+      if (!res.ok || !body.ok || !body.data) {
+        setErrorState({
+          message: body.message ?? "Unable to reach Sustainability Coach.",
+          errorCode: body.errorCode,
+          fallback: body.fallbackData,
+          contextMeta: body.contextMeta,
+        });
+        return;
+      }
+
+      setData(body.data);
+      setGeneratedFingerprint(recommendationFingerprint);
+      setAiGenerated(Boolean(body.aiGenerated));
+      setProvenanceMode(body.provenanceMode);
+      setModelUsed(body.modelUsed);
+      setCitations(body.citations ?? []);
+      setContextMeta(body.contextMeta ?? null);
+      addToast(
+        locale === "hi"
+          ? "टिकाऊ विकल्प तैयार किए गए।"
+          : "Sustainable alternatives generated."
+      );
+    } catch {
+      setErrorState({
+        message: "Network error while contacting Sustainability Coach.",
+        errorCode: "NETWORK_ERROR",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogAlternative = (alt: AiSustainabilityResponse["alternatives"][number]) => {
+    const isCommute =
+      alt.domain === "daily_commute" || alt.domain === "school_college_travel";
+    const altMode = isCommute
+      ? inferAltModeFromText(alt.suggestedAlternative)
+      : undefined;
+
+    const outcome = logActivity({
+      activityType:
+        altMode === "work_from_home"
+          ? "avoided_travel"
+          : altMode === "carpool"
+            ? "carpooled"
+            : isCommute
+              ? "used_public_transport"
+              : "indoor_air_action",
+      title: alt.suggestedAlternative.slice(0, 120),
+      dedupeKey: `sust:${alt.id}`,
+      baselineMode: isCommute ? effectiveBaseMode : undefined,
+      alternativeMode: altMode,
+      distanceKm: isCommute ? profile.dailyCommuteKm : undefined,
+      occupancy: altMode === "carpool" ? 3 : 1,
+    });
+
+    if (!outcome.added) {
+      addToast(
+        locale === "hi"
+          ? "यह कार्य आज पहले ही दर्ज किया जा चुका है।"
+          : "Already logged for today (duplicate avoided).",
+        "info"
+      );
+      return;
+    }
+
+    addToast(
+      locale === "hi"
+        ? "गतिविधि आपके हरित ट्रैकर में सहेजी गई।"
+        : "Completed swap logged to Green Activity Tracker."
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <AiDisclosureNote />
+      <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <CardTitle className="text-2xl font-semibold">
+                {locale === "hi"
+                  ? "AI टिकाऊ जीवनशैली केंद्र"
+                  : "AI Sustainability Hub"}
+              </CardTitle>
+              <CardDescription>
+                {locale === "hi"
+                  ? `${selectedLocation.name} की वायु गुणवत्ता और आपके बजट के अनुसार सुरक्षित विकल्प। सटीक CO₂e गणित प्रभाव कैलकुलेटर में देखें।`
+                  : `Health-aware sustainable swaps tailored to ${selectedLocation.name} AQI and your budget. Compute verified CO₂e savings in the Impact Calculator.`}
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              onClick={() => void generateAlternatives()}
+              disabled={loading}
+              className="gap-1.5 shrink-0"
+            >
+              <RefreshCw
+                className={`size-4 ${loading ? "animate-spin" : ""}`}
+                aria-hidden="true"
+              />
+              <span>Suggest Alternatives</span>
+            </Button>
+          </div>
+        </CardHeader>
+
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="sus-focus-select">
+              {locale === "hi" ? "मुख्य क्षेत्र" : "Focus Area"}
+            </Label>
+            <select
+              id="sus-focus-select"
+              value={focusArea}
+              onChange={(e) => setFocusArea(e.target.value as typeof focusArea)}
+              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+            >
+              <option value="all">
+                {locale === "hi" ? "सभी श्रेणियाँ" : "All Categories"}
+              </option>
+              <option value="daily_commute">
+                {locale === "hi" ? "दैनिक यात्रा" : "Daily Commuting"}
+              </option>
+              <option value="school_college_travel">
+                {locale === "hi" ? "स्कूल व कॉलेज यात्रा" : "School & College Travel"}
+              </option>
+              <option value="household_energy">
+                {locale === "hi" ? "घरेलू ऊर्जा" : "Household Energy"}
+              </option>
+              <option value="waste_practices">
+                {locale === "hi" ? "कचरा व दहन रोकथाम" : "Waste Practices"}
+              </option>
+              <option value="community_sustainability">
+                {locale === "hi" ? "सामुदायिक पहल" : "Community Sustainability"}
+              </option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="sus-budget-select">
+              {locale === "hi" ? "बजट स्तर" : "Budget Tier"}
+            </Label>
+            <select
+              id="sus-budget-select"
+              value={budgetTier}
+              onChange={(e) => setBudgetTier(e.target.value as BudgetTier)}
+              className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+            >
+              <option value="free">
+                {locale === "hi" ? "शून्य-खर्च उपाय" : "Zero-Cost Actions"}
+              </option>
+              <option value="low_cost">
+                {locale === "hi" ? "कम-खर्च विकल्प" : "Low-Cost Swaps"}
+              </option>
+              <option value="investment">
+                {locale === "hi" ? "निवेश स्तर" : "Investment Tier"}
+              </option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {errorState ? (
+        <AiErrorRecoveryCard
+          message={errorState.message}
+          errorCode={errorState.errorCode}
+          onRetry={() => void generateAlternatives()}
+          hasFallback={Boolean(errorState.fallback)}
+          onUseFallback={() => {
+            if (!errorState.fallback) return;
+            setData(errorState.fallback);
+            setAiGenerated(false);
+            setModelUsed(undefined);
+            setContextMeta(errorState.contextMeta ?? null);
+            setErrorState(null);
+          }}
+        />
+      ) : null}
+
+      {loading ? (
+        <Skeleton className="h-60 w-full rounded-2xl" />
+      ) : data ? (
+        <div className="space-y-5">
+          <div className="space-y-2.5 rounded-2xl border border-border bg-card p-4">
+            <AiProvenanceBadge
+              aiGenerated={aiGenerated}
+              provenanceMode={provenanceMode}
+              modelUsed={modelUsed}
+            />
+            <h2 className="text-lg font-semibold">{data.headline}</h2>
+            <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
+              <ShieldAlert
+                className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                aria-hidden="true"
+              />
+              <p>{data.healthPriorityNote}</p>
+            </div>
+            {contextMeta ? <ContextMetaStrip meta={contextMeta} /> : null}
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {data.alternatives.map((alt) => {
+              const isCommute =
+                alt.domain === "daily_commute" ||
+                alt.domain === "school_college_travel";
+              const inferredAlt = inferAltModeFromText(alt.suggestedAlternative);
+              const detPreview = isCommute
+                ? compareTransportScenarios({
+                    baseline: {
+                      mode: effectiveBaseMode,
+                      roundTripDistanceKm: profile.dailyCommuteKm,
+                      travelDaysPerWeek: profile.commuteDaysPerWeek ?? 5,
+                      workingWeeksPerYear: profile.workingWeeksPerYear ?? 48,
+                      occupancy: profile.vehicleOccupancy ?? 1,
+                    },
+                    alternative: {
+                      mode: inferredAlt,
+                      roundTripDistanceKm: profile.dailyCommuteKm,
+                      travelDaysPerWeek: profile.commuteDaysPerWeek ?? 5,
+                      workingWeeksPerYear: profile.workingWeeksPerYear ?? 48,
+                      occupancy: inferredAlt === "carpool" ? 3 : 1,
+                    },
+                  })
+                : null;
+
+              return (
+                <Card key={alt.id} className="flex flex-col justify-between">
+                  <CardHeader>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <Badge variant="secondary" className="gap-1 capitalize">
+                        <Leaf className="size-3" aria-hidden="true" />
+                        {alt.domain.replace(/_/g, " ")}
+                      </Badge>
+                      <div className="flex gap-1.5">
+                        <Badge variant="outline">
+                          {alt.feasibility}
+                        </Badge>
+                        <Badge variant="outline">
+                          {alt.relativeCost.replace("_", " ")}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Side-by-side Current vs Suggested Comparison */}
+                    <div className="mt-2 grid grid-cols-1 gap-2 rounded-xl border border-border bg-muted/25 p-3 text-xs sm:grid-cols-2">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          {locale === "hi" ? "वर्तमान गतिविधि" : "Current Activity"}
+                        </p>
+                        <p className="mt-0.5 text-foreground/85">{alt.currentActivity}</p>
+                      </div>
+                      <div className="border-t border-border/60 pt-2 sm:border-t-0 sm:border-l sm:pl-3 sm:pt-0">
+                        <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                          <ArrowRight className="size-3" aria-hidden="true" />
+                          {locale === "hi" ? "सुझाया विकल्प" : "Suggested Alternative"}
+                        </p>
+                        <p className="mt-0.5 font-medium text-foreground">
+                          {alt.suggestedAlternative}
+                        </p>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-3 text-xs">
+                    {detPreview && detPreview.avoidedAnnualKgCo2e > 0 ? (
+                      <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-medium text-emerald-800 dark:text-emerald-300">
+                        Deterministic Est.: ~{detPreview.avoidedAnnualKgCo2e.toFixed(1)} kg CO₂e/yr avoided ({profile.dailyCommuteKm} km/day)
+                      </div>
+                    ) : null}
+
+                    <p className="text-foreground/90">
+                      <span className="font-medium">
+                        {locale === "hi" ? "पर्यावरणीय लाभ:" : "Environmental Benefit:"}
+                      </span>{" "}
+                      {alt.qualitativeEnvironmentalBenefit}
+                    </p>
+                    <p className="text-muted-foreground">
+                      <span className="font-medium text-foreground">
+                        {locale === "hi" ? "स्वास्थ्य व व्यावहारिक पहलू:" : "Health & Trade-Off:"}
+                      </span>{" "}
+                      {alt.healthAndPracticalTradeOff}
+                    </p>
+
+                    <WhyRecommendationToggle
+                      explanation={alt.whyThisRecommendation}
+                      dataBasis={data.dataBasis}
+                      sourceIds={alt.sourceIds}
+                      citations={citations}
+                      limitation={data.disclaimer}
+                    />
+
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      {isCommute ? (
+                        <Link
+                          href={`/impact?baseline=${effectiveBaseMode}&alternative=${inferredAlt}&distance=${profile.dailyCommuteKm}`}
+                          className={cn(
+                            buttonVariants({ variant: "outline", size: "sm" }),
+                            "gap-1.5 text-xs"
+                          )}
+                        >
+                          <BarChart3 className="size-3.5 text-primary" aria-hidden="true" />
+                          <span>
+                            {locale === "hi"
+                              ? "प्रभाव की गणना करें →"
+                              : "Calculate Impact →"}
+                          </span>
+                        </Link>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleLogAlternative(alt)}
+                        className="gap-1.5 text-xs"
+                      >
+                        <CheckCircle2 className="size-3.5 text-primary" aria-hidden="true" />
+                        <span>
+                          {locale === "hi" ? "पूर्ण गतिविधि दर्ज करें" : "Log Completed"}
+                        </span>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <EmptyStateCard
+          title={
+            locale === "hi"
+              ? "सुरक्षित टिकाऊ विकल्प खोजें"
+              : "Explore Safe Sustainable Alternatives"
+          }
+          description={
+            locale === "hi"
+              ? "ऊपर अपना क्षेत्र और बजट चुनें और वर्तमान प्रदूषण स्तर के अनुरूप व्यावहारिक सुझाव पाएं।"
+              : "Choose a focus area and budget above to receive practical low-emission suggestions aligned with current smog conditions."
+          }
+          action={
+            <Button type="button" onClick={() => void generateAlternatives()}>
+              Suggest Alternatives
+            </Button>
+          }
+        />
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,221 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta), var(--font-devanagari), system-ui, sans-serif;
+  --font-mono: var(--font-mono-code), ui-monospace, monospace;
+  --font-heading: var(--font-jakarta), var(--font-devanagari), system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-brand-obsidian: var(--brand-obsidian);
+  --color-brand-emerald: var(--brand-emerald);
+  --color-brand-mint: var(--brand-mint);
+  --color-brand-sage: var(--brand-sage);
+  --color-brand-amber: var(--brand-amber);
+  --color-brand-coral: var(--brand-coral);
+  --color-aqi-good: var(--aqi-good);
+  --color-aqi-moderate: var(--aqi-moderate);
+  --color-aqi-sensitive: var(--aqi-sensitive);
+  --color-aqi-unhealthy: var(--aqi-unhealthy);
+  --color-aqi-very-unhealthy: var(--aqi-very-unhealthy);
+  --color-aqi-hazardous: var(--aqi-hazardous);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --brand-obsidian: #071814;
+  --brand-emerald: #0d2923;
+  --brand-mint: #34e8a5;
+  --brand-sage: #a8c9b7;
+  --brand-amber: #ffb547;
+  --brand-coral: #ff647c;
+
+  --background: #f5f9f7;
+  --foreground: #071814;
+  --card: #ffffff;
+  --card-foreground: #071814;
+  --popover: #ffffff;
+  --popover-foreground: #071814;
+  --primary: #0d2923;
+  --primary-foreground: #ffffff;
+  --secondary: #e7f2ed;
+  --secondary-foreground: #071814;
+  --muted: #eaf2ee;
+  --muted-foreground: #415c53;
+  --accent: #d3f7e7;
+  --accent-foreground: #071814;
+  --destructive: #d9384e;
+  --border: #d4e3dc;
+  --input: #bfd3cb;
+  --ring: #0d9468;
+  --chart-1: #0d9468;
+  --chart-2: #0d2923;
+  --chart-3: #e0911f;
+  --chart-4: #f97316;
+  --chart-5: #ff647c;
+
+  /* Independent semantic US AQI severity tokens */
+  --aqi-good: #16a34a;
+  --aqi-moderate: #eab308;
+  --aqi-sensitive: #f97316;
+  --aqi-unhealthy: #ef4444;
+  --aqi-very-unhealthy: #9333ea;
+  --aqi-hazardous: #9f1239;
+
+  --radius: 0.75rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #071814;
+  --sidebar-primary: #0d2923;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e7f2ed;
+  --sidebar-accent-foreground: #071814;
+  --sidebar-border: #d4e3dc;
+  --sidebar-ring: #0d9468;
+}
+
+.dark {
+  --brand-obsidian: #06120f;
+  --brand-emerald: #0b1f1a;
+  --brand-mint: #34e8a5;
+  --brand-sage: #a8c9b7;
+  --brand-amber: #ffb547;
+  --brand-coral: #ff647c;
+
+  --background: #06120f;
+  --foreground: #f5f9f7;
+  --card: #0b1f1a;
+  --card-foreground: #f5f9f7;
+  --popover: #0e2822;
+  --popover-foreground: #f5f9f7;
+  --primary: #34e8a5;
+  --primary-foreground: #06120f;
+  --secondary: #112b24;
+  --secondary-foreground: #f5f9f7;
+  --muted: #102720;
+  --muted-foreground: #a8c9b7;
+  --accent: #15382e;
+  --accent-foreground: #34e8a5;
+  --destructive: #ff647c;
+  --border: rgba(168, 201, 183, 0.16);
+  --input: rgba(168, 201, 183, 0.24);
+  --ring: #34e8a5;
+  --chart-1: #34e8a5;
+  --chart-2: #a8c9b7;
+  --chart-3: #ffb547;
+  --chart-4: #fb923c;
+  --chart-5: #ff647c;
+
+  /* Independent semantic US AQI severity tokens */
+  --aqi-good: #22c55e;
+  --aqi-moderate: #facc15;
+  --aqi-sensitive: #fb923c;
+  --aqi-unhealthy: #f87171;
+  --aqi-very-unhealthy: #c084fc;
+  --aqi-hazardous: #fb7185;
+
+  --sidebar: #071612;
+  --sidebar-foreground: #f5f9f7;
+  --sidebar-primary: #34e8a5;
+  --sidebar-primary-foreground: #06120f;
+  --sidebar-accent: #112b24;
+  --sidebar-accent-foreground: #34e8a5;
+  --sidebar-border: rgba(168, 201, 183, 0.14);
+  --sidebar-ring: #34e8a5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased transition-colors duration-200;
+  }
+  html {
+    @apply font-sans scroll-smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(168, 201, 183, 0.28) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(168, 201, 183, 0.26);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(52, 232, 165, 0.45);
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  html,
+  body {
+    background: #ffffff !important;
+    color: #091512 !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+}
