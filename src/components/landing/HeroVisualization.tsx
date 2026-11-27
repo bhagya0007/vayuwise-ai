@@ -195,11 +195,11 @@ export function HeroVisualization({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-medium">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-amber-800 dark:text-[#FFB547]">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-amber-900 dark:text-[#FFB547]">
           <span className="size-2 rounded-full bg-[#FFB547]" aria-hidden="true" />
           {smogLabel}
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-800 dark:text-[#34E8A5]">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-emerald-900 dark:text-[#34E8A5]">
           <Wind className="size-3.5" aria-hidden="true" />
           {cleanLabel}
         </span>

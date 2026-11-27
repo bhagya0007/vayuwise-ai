@@ -146,7 +146,7 @@ export function LandingPage() {
           >
             <Badge
               variant="outline"
-              className="h-auto gap-1.5 border-emerald-500/35 bg-emerald-500/10 py-1 text-emerald-800 dark:text-emerald-300"
+              className="h-auto gap-1.5 border-emerald-500/35 bg-emerald-500/10 py-1 text-emerald-900 dark:text-emerald-300"
             >
               <Sparkles className="size-3.5 shrink-0" aria-hidden="true" />
               <span>{landing.hero.badge}</span>

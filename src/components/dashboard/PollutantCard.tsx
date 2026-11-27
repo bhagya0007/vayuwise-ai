@@ -100,7 +100,7 @@ export function PollutantCard({
             />
           </svg>
         ) : (
-          <div className="h-6 flex items-center text-[10px] text-muted-foreground/70">
+          <div className="h-6 flex items-center text-[10px] text-muted-foreground">
             {locale === "hi" ? "डेटा अनुपलब्ध" : "No series"}
           </div>
         )}

@@ -12,6 +12,7 @@ import {
 import {
   AiDisclosureNote,
   AiErrorRecoveryCard,
+  AiPrivacyAccordion,
   AiProvenanceBadge,
   ContextMetaStrip,
   WhyRecommendationToggle,
@@ -20,6 +21,11 @@ import {
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
 import { EmptyStateCard } from "@/components/common/Controls";
 import { useAppPreferences } from "@/components/providers/AppProviders";
+import {
+  postAiEndpoint,
+  toAiLocationPayload,
+  type AiModuleErrorState,
+} from "@/lib/ai/client";
 import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
 import type { AiDailyPlanResponse } from "@/lib/ai/schemas";
 import { Badge } from "@/components/ui/badge";
@@ -56,84 +62,49 @@ export function PlannerView() {
   const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
   const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
   const [completedWindows, setCompletedWindows] = useState<string[]>([]);
-  const [errorState, setErrorState] = useState<{
-    message: string;
-    errorCode?: string;
-    fallback?: AiDailyPlanResponse;
-    contextMeta?: AiContextMeta;
-  } | null>(null);
+  const [errorState, setErrorState] =
+    useState<AiModuleErrorState<AiDailyPlanResponse> | null>(null);
 
   const generatePlan = async () => {
     setLoading(true);
     setErrorState(null);
-    try {
-      const res = await fetch("/api/ai/plan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          locale,
-          location: {
-            id: selectedLocation.id,
-            name: selectedLocation.name,
-            region: selectedLocation.region,
-            country: selectedLocation.country,
-            countryCode: selectedLocation.countryCode,
-            latitude: selectedLocation.latitude,
-            longitude: selectedLocation.longitude,
-            timezone: selectedLocation.timezone,
-          },
-          profile,
-          scheduleNote: scheduleNote.trim() || undefined,
-        }),
-      });
-
-      const body = (await res.json()) as {
-        ok: boolean;
-        data?: AiDailyPlanResponse;
-        fallbackData?: AiDailyPlanResponse;
-        aiGenerated?: boolean;
-        provenanceMode?: "gemini" | "gemini_safety_adjusted" | "rule_based_fallback";
-        modelUsed?: string;
-        citations?: VerifiedKnowledgeSource[];
-        contextMeta?: AiContextMeta;
-        errorCode?: string;
-        message?: string;
-      };
-
-      if (!res.ok || !body.ok || !body.data) {
-        setErrorState({
-          message: body.message ?? "Unable to generate AI daily plan.",
-          errorCode: body.errorCode,
-          fallback: body.fallbackData,
-          contextMeta: body.contextMeta,
-        });
-        return;
-      }
-
-      setPlan(body.data);
-      setGeneratedFingerprint(recommendationFingerprint);
-      setAiGenerated(Boolean(body.aiGenerated));
-      setProvenanceMode(body.provenanceMode);
-      setModelUsed(body.modelUsed);
-      setCitations(body.citations ?? []);
-      setContextMeta(body.contextMeta ?? null);
-      setCompletedWindows([]);
-      addToast(
+    const result = await postAiEndpoint<AiDailyPlanResponse>({
+      endpoint: "/api/ai/plan",
+      body: {
+        locale,
+        location: toAiLocationPayload(selectedLocation),
+        profile,
+        scheduleNote: scheduleNote.trim() || undefined,
+      },
+      fallbackErrorMessage: "Unable to generate AI daily plan.",
+      networkErrorMessage:
         locale === "hi"
-          ? "व्यक्तिगत दैनिक योजना तैयार है।"
-          : "Personalized daily plan generated."
+          ? "दैनिक योजना बनाते समय नेटवर्क त्रुटि हुई।"
+          : "Network error while generating daily plan.",
+    });
+
+    if (!result.ok || !result.payload) {
+      setErrorState(
+        result.error ?? { message: "Unable to generate AI daily plan." }
       );
-    } catch {
-      setErrorState({
-        message:
-          locale === "hi"
-            ? "दैनिक योजना बनाते समय नेटवर्क त्रुटि हुई।"
-            : "Network error while generating daily plan.",
-        errorCode: "NETWORK_ERROR",
-      });
-    } finally {
       setLoading(false);
+      return;
     }
+
+    setPlan(result.payload.data);
+    setGeneratedFingerprint(recommendationFingerprint);
+    setAiGenerated(result.payload.aiGenerated);
+    setProvenanceMode(result.payload.provenanceMode);
+    setModelUsed(result.payload.modelUsed);
+    setCitations(result.payload.citations);
+    setContextMeta(result.payload.contextMeta);
+    setCompletedWindows([]);
+    addToast(
+      locale === "hi"
+        ? "व्यक्तिगत दैनिक योजना तैयार है।"
+        : "Personalized daily plan generated."
+    );
+    setLoading(false);
   };
 
   const toggleSlot = (windowId: string, title?: string) => {
@@ -207,15 +178,14 @@ export function PlannerView() {
           </div>
         </div>
 
-        <details className="text-xs text-muted-foreground">
-          <summary className="cursor-pointer select-none font-medium text-foreground/80">
-            {locale === "hi" ? "AI गोपनीयता और प्रोफ़ाइल आधार" : "AI privacy & profile context"}
-          </summary>
-          <div className="mt-2 space-y-2">
-            <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
-            <AiDisclosureNote />
-          </div>
-        </details>
+        <AiPrivacyAccordion
+          summaryLabel={
+            locale === "hi" ? "AI गोपनीयता और प्रोफ़ाइल आधार" : "AI privacy & profile context"
+          }
+        >
+          <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
+          <AiDisclosureNote />
+        </AiPrivacyAccordion>
       </div>
 
       {errorState ? (

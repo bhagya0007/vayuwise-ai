@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -239,5 +239,26 @@ export function AiErrorRecoveryCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Shared progressive-disclosure accordion displaying the user's non-sensitive personalization
+ * context alongside Gemini data-handling disclosures.
+ */
+export function AiPrivacyAccordion({
+  summaryLabel,
+  children,
+}: {
+  summaryLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <details className="text-xs text-muted-foreground">
+      <summary className="cursor-pointer select-none font-medium text-foreground">
+        {summaryLabel}
+      </summary>
+      <div className="mt-2 space-y-2">{children}</div>
+    </details>
   );
 }

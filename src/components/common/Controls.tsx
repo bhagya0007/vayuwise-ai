@@ -16,7 +16,9 @@ export function LocaleToggle() {
       size="sm"
       onClick={toggleLocale}
       aria-label={
-        locale === "en" ? "Switch language to Hindi" : "Switch language to English"
+        locale === "en"
+          ? `${dict.languageSwitchLabel} (Switch language to Hindi)`
+          : `${dict.languageSwitchLabel} (Switch language to English)`
       }
       className="gap-1.5"
     >
@@ -36,7 +38,11 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={toggleTheme}
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={
+        isDark
+          ? `${dict.themeLightLabel} (Switch to light theme)`
+          : `${dict.themeDarkLabel} (Switch to dark theme)`
+      }
       className="gap-1.5"
     >
       {isDark ? (

@@ -90,15 +90,16 @@ flowchart LR
 ## Testing & Verification Commands
 
 - `npm run typecheck` — Strict TypeScript check (`tsc --noEmit`)
-- `npm run lint` — ESLint check across app and tests
-- `npm run test` — Run all Vitest unit, integration, impact math, and 24-scenario AI safety tests (`79` tests across `9` files)
-- `npm run test:e2e` — Run all Playwright Chromium E2E tests (`28` tests across `8` files)
+- `npm run lint` — ESLint check across app, components, API routes, and tests (`0` errors, `0` warnings)
+- `npm run test` — Run all Vitest unit, API route integration, Gemini/Open-Meteo service resilience, impact math, and AI safety tests (`104` tests across `14` files; `92.64%` statement and `75.09%` branch coverage on `src/app/api`, `src/config`, `src/lib`, `src/services`)
+- `npm run test:e2e` — Run all Playwright Chromium E2E tests (`32` tests across `9` files, including `@axe-core/playwright` WCAG 2.2 AA & HTTP security header checks)
+- `npm audit --omit=dev` — Verify production dependencies (`0` vulnerabilities)
 
 ---
 
 ## Security, Privacy & Known Limitations
 
-- **Zero Client Key Leakage:** `GEMINI_API_KEY` is read exclusively inside `src/config/env.ts` server helpers and scanned absent from `.next/static`.
+- **Zero Client Key Leakage & Strict Security Headers:** `GEMINI_API_KEY` is read exclusively inside `src/config/env.ts` server helpers and verified absent from `.next/static`. `next.config.ts` disables `X-Powered-By` (`poweredByHeader: false`) and configures `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`.
 - **Google Gemini Free-Tier Disclosure:** Under Google's unpaid/free-tier Gemini API terms, prompts and outputs sent to the API may be logged or reviewed by Google to improve products/ML models. Users are explicitly cautioned not to enter medical records, personal identities, or confidential details.
 - **PWA Cache Privacy:** `public/sw.js` caches only immutable static `/_next/static/*` assets and `.svg` icons, strictly bypassing `/api/*` and browser preferences.
 - **Known Limitations:**

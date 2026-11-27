@@ -4,55 +4,43 @@ import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   Bot,
-  Check,
   ChevronDown,
   ChevronUp,
-  Copy,
   Info,
   Leaf,
   MapPin,
   Plus,
-  RotateCcw,
   Send,
   Shield,
   Sparkles,
   Square,
   Trash2,
-  User,
   Wind,
 } from "lucide-react";
 import {
   AiDisclosureNote,
   AiErrorRecoveryCard,
-  AiProvenanceBadge,
-  WhyRecommendationToggle,
-  type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
+import {
+  AssistantMessageBubble,
+  type ChatEntry,
+} from "@/components/assistant/AssistantMessageBubble";
 import { useAppPreferences } from "@/components/providers/AppProviders";
-import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
-import type { AiChatResponse } from "@/lib/ai/schemas";
-import { classifyUsAqi } from "@/lib/air-quality/intelligence";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useAirQualityForecast } from "@/hooks/useAirQualityForecast";
+import {
+  postAiEndpoint,
+  toAiLocationPayload,
+  type AiModuleErrorState,
+} from "@/lib/ai/client";
+import type { AiChatResponse } from "@/lib/ai/schemas";
+import { classifyUsAqi } from "@/lib/air-quality/intelligence";
 import { cn } from "@/lib/utils";
-import type { AirQualityForecast } from "@/types/domain";
-
-interface ChatEntry {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  promptUsed?: string;
-  aiGenerated?: boolean;
-  provenanceMode?: "gemini" | "gemini_safety_adjusted" | "rule_based_fallback";
-  modelUsed?: string;
-  structured?: AiChatResponse;
-  citations?: VerifiedKnowledgeSource[];
-  contextMeta?: AiContextMeta;
-}
 
 const QUICK_ACTIONS = {
   en: [
@@ -101,6 +89,10 @@ const QUICK_ACTIONS = {
   ],
 } as const;
 
+/**
+ * Conversation-first Gemini AI Assistant anchored to server-resolved Open-Meteo telemetry
+ * with safety policy enforcement, sticky composer, and expandable verified citations.
+ */
 export function AssistantView() {
   const {
     addToast,
@@ -111,56 +103,29 @@ export function AssistantView() {
     phase04Dict,
   } = useAppPreferences();
 
-  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(
-    null
-  );
+  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(null);
   const [showContextDrawer, setShowContextDrawer] = useState(false);
-  const [liveUsAqi, setLiveUsAqi] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChatEntry[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [errorState, setErrorState] = useState<{
-    message: string;
-    errorCode?: string;
-    fallback?: AiChatResponse;
-    contextMeta?: AiContextMeta;
-    lastPrompt: string;
-  } | null>(null);
+  const [errorState, setErrorState] = useState<
+    (AiModuleErrorState<AiChatResponse> & { lastPrompt: string }) | null
+  >(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const abortRef = useRef<AbortController | null>(null);
   const scrollEndRef = useRef<HTMLDivElement | null>(null);
   const seqRef = useRef(0);
 
+  const { activeForecast } = useAirQualityForecast(selectedLocation, {
+    forecastDays: 1,
+  });
+  const liveUsAqi = activeForecast?.current.usAqi ?? null;
+
   const nextId = (prefix: string) => {
     seqRef.current += 1;
     return `${prefix}-${seqRef.current}`;
   };
-
-  // Lightweight ambient AQI badge lookup for the header pill
-  useEffect(() => {
-    const controller = new AbortController();
-    const params = new URLSearchParams({
-      lat: String(selectedLocation.latitude),
-      lon: String(selectedLocation.longitude),
-      name: selectedLocation.name,
-      country: selectedLocation.country,
-      countryCode: selectedLocation.countryCode,
-      timezone: selectedLocation.timezone || "auto",
-      forecastDays: "1",
-    });
-    fetch(`/api/air-quality?${params.toString()}`, { signal: controller.signal })
-      .then((r) => r.json())
-      .then((body: { ok?: boolean; forecast?: AirQualityForecast }) => {
-        if (!controller.signal.aborted && body.ok && body.forecast) {
-          setLiveUsAqi(body.forecast.current.usAqi);
-        }
-      })
-      .catch(() => {
-        // leave null cleanly
-      });
-    return () => controller.abort();
-  }, [selectedLocation]);
 
   useEffect(() => {
     if (
@@ -198,83 +163,49 @@ export function AssistantView() {
     abortRef.current = controller;
     setIsLoading(true);
 
-    try {
-      const res = await fetch("/api/ai/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify({
-          message: trimmed,
-          history: historyPayload,
-          locale,
-          location: {
-            id: selectedLocation.id,
-            name: selectedLocation.name,
-            region: selectedLocation.region,
-            country: selectedLocation.country,
-            countryCode: selectedLocation.countryCode,
-            latitude: selectedLocation.latitude,
-            longitude: selectedLocation.longitude,
-            timezone: selectedLocation.timezone,
-          },
-          profile,
-        }),
-      });
+    const res = await postAiEndpoint<AiChatResponse>({
+      endpoint: "/api/ai/chat",
+      fallbackErrorMessage: "Unable to reach Gemini AI.",
+      networkErrorMessage:
+        locale === "hi"
+          ? "AI सेवा से संपर्क करते समय नेटवर्क त्रुटि।"
+          : "Network error while contacting AI endpoint.",
+      signal: controller.signal,
+      body: {
+        message: trimmed,
+        history: historyPayload,
+        locale,
+        location: toAiLocationPayload(selectedLocation),
+        profile,
+      },
+    });
 
-      const body = (await res.json()) as {
-        ok: boolean;
-        aiGenerated?: boolean;
-        provenanceMode?: "gemini" | "gemini_safety_adjusted" | "rule_based_fallback";
-        modelUsed?: string;
-        data?: AiChatResponse;
-        fallbackData?: AiChatResponse;
-        citations?: VerifiedKnowledgeSource[];
-        contextMeta?: AiContextMeta;
-        errorCode?: string;
-        message?: string;
-      };
+    setIsLoading(false);
+    if (res.aborted) return;
 
-      if (!res.ok || !body.ok || !body.data) {
-        setErrorState({
-          message: body.message ?? "Unable to reach Gemini AI.",
-          errorCode: body.errorCode,
-          fallback: body.fallbackData,
-          contextMeta: body.contextMeta,
-          lastPrompt: trimmed,
-        });
-        return;
+    if (!res.ok || !res.payload) {
+      if (res.error) {
+        setErrorState({ ...res.error, lastPrompt: trimmed });
       }
-
-      setGeneratedFingerprint(recommendationFingerprint);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId("a"),
-          role: "assistant",
-          text: body.data!.reply,
-          promptUsed: trimmed,
-          aiGenerated: Boolean(body.aiGenerated),
-          provenanceMode: body.provenanceMode,
-          modelUsed: body.modelUsed,
-          structured: body.data,
-          citations: body.citations,
-          contextMeta: body.contextMeta,
-        },
-      ]);
-    } catch (err) {
-      if ((err as Error).name !== "AbortError") {
-        setErrorState({
-          message:
-            locale === "hi"
-              ? "AI सेवा से संपर्क करते समय नेटवर्क त्रुटि।"
-              : "Network error while contacting AI endpoint.",
-          errorCode: "NETWORK_ERROR",
-          lastPrompt: trimmed,
-        });
-      }
-    } finally {
-      setIsLoading(false);
+      return;
     }
+
+    setGeneratedFingerprint(recommendationFingerprint);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: nextId("a"),
+        role: "assistant",
+        text: res.payload!.data.reply,
+        promptUsed: trimmed,
+        aiGenerated: res.payload!.aiGenerated,
+        provenanceMode: res.payload!.provenanceMode,
+        modelUsed: res.payload!.modelUsed,
+        structured: res.payload!.data,
+        citations: res.payload!.citations,
+        contextMeta: res.payload!.contextMeta ?? undefined,
+      },
+    ]);
   };
 
   const handleRegenerateLatest = () => {
@@ -317,7 +248,9 @@ export function AssistantView() {
       await navigator.clipboard.writeText(msg.text);
       setCopiedId(msg.id);
       addToast(
-        locale === "hi" ? "उत्तर क्लिपबोर्ड पर कॉपी किया गया।" : "Response copied to clipboard."
+        locale === "hi"
+          ? "उत्तर क्लिपबोर्ड पर कॉपी किया गया।"
+          : "Response copied to clipboard."
       );
       window.setTimeout(() => setCopiedId(null), 1800);
     } catch {
@@ -349,7 +282,6 @@ export function AssistantView() {
 
   return (
     <div className="flex h-[calc(100dvh-11rem)] min-h-[460px] flex-col gap-3 lg:h-[calc(100dvh-7.5rem)]">
-      {/* Compact Conversation-First Header */}
       <div className="shrink-0 rounded-2xl border border-border/80 bg-card px-4 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-3">
@@ -366,7 +298,10 @@ export function AssistantView() {
                   {selectedLocation.name} · {locale.toUpperCase()}
                 </Badge>
                 {liveUsAqi !== null && aqiBadge.band ? (
-                  <Badge variant="outline" className={cn("text-[11px]", aqiBadge.band.badgeClass)}>
+                  <Badge
+                    variant="outline"
+                    className={cn("text-[11px]", aqiBadge.band.badgeClass)}
+                  >
                     US AQI {Math.round(liveUsAqi)} ·{" "}
                     {locale === "hi" ? aqiBadge.band.labelHi : aqiBadge.band.labelEn}
                   </Badge>
@@ -387,9 +322,9 @@ export function AssistantView() {
               <Info className="size-3.5" aria-hidden="true" />
               <span>{locale === "hi" ? "गोपनीयता व प्रोफ़ाइल" : "Context & Privacy"}</span>
               {showContextDrawer ? (
-                <ChevronUp className="size-3.5" />
+                <ChevronUp className="size-3.5" aria-hidden="true" />
               ) : (
-                <ChevronDown className="size-3.5" />
+                <ChevronDown className="size-3.5" aria-hidden="true" />
               )}
             </Button>
 
@@ -413,7 +348,7 @@ export function AssistantView() {
               className="gap-1 text-xs"
             >
               <Trash2 className="size-3.5" aria-hidden="true" />
-              <span>Clear</span>
+              <span>{locale === "hi" ? "साफ़ करें" : "Clear"}</span>
             </Button>
           </div>
         </div>
@@ -436,9 +371,13 @@ export function AssistantView() {
         ) : null}
       </div>
 
-      {/* Main Scrollable Chat Surface + Sticky Composer */}
       <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-border/80">
-        <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+        <div
+          className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5"
+          role="log"
+          aria-live="polite"
+          aria-label="Conversation history"
+        >
           {errorState ? (
             <AiErrorRecoveryCard
               message={errorState.message}
@@ -463,7 +402,6 @@ export function AssistantView() {
                   : `Ask about ${selectedLocation.name} smog safety, clean indoor air habits, daily timing, or sustainable commute alternatives.`}
               </p>
 
-              {/* 4 Prominent Suggested Action Cards */}
               <div className="mt-5 grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2">
                 {quickCards.map((card) => {
                   const Icon = card.icon;
@@ -479,9 +417,7 @@ export function AssistantView() {
                         <Icon className="size-4" aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground">
-                          {card.title}
-                        </p>
+                        <p className="text-xs font-semibold text-foreground">{card.title}</p>
                         <p className="mt-0.5 text-xs leading-snug text-muted-foreground">
                           {card.prompt}
                         </p>
@@ -493,119 +429,20 @@ export function AssistantView() {
             </div>
           ) : (
             messages.map((msg) => (
-              <div
+              <AssistantMessageBubble
                 key={msg.id}
-                className={cn(
-                  "flex gap-3",
-                  msg.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                {msg.role === "assistant" ? (
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
-                    <Bot className="size-4" aria-hidden="true" />
-                  </div>
-                ) : null}
-
-                <div
-                  className={cn(
-                    "max-w-[92%] space-y-3 rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[82%]",
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "border border-border bg-muted/35 text-foreground"
-                  )}
-                >
-                  {msg.role === "assistant" ? (
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <AiProvenanceBadge
-                        aiGenerated={Boolean(msg.aiGenerated)}
-                        provenanceMode={msg.provenanceMode}
-                        modelUsed={msg.modelUsed}
-                      />
-                      <div className="flex items-center gap-1">
-                        {msg.id === latestAssistantId ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon-xs"
-                            disabled={isLoading}
-                            onClick={handleRegenerateLatest}
-                            aria-label="Regenerate response"
-                          >
-                            <RotateCcw className="size-3.5" aria-hidden="true" />
-                          </Button>
-                        ) : null}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => void handleCopy(msg)}
-                          aria-label="Copy response"
-                        >
-                          {copiedId === msg.id ? (
-                            <Check className="size-3.5 text-primary" aria-hidden="true" />
-                          ) : (
-                            <Copy className="size-3.5" aria-hidden="true" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <p className="whitespace-pre-line">{msg.text}</p>
-
-                  {msg.structured?.recommendations &&
-                  msg.structured.recommendations.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {msg.structured.recommendations.slice(0, 5).map((rec) => (
-                        <div
-                          key={rec.id}
-                          className="rounded-xl border border-border/80 bg-background/70 px-3 py-2 text-xs"
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-1.5">
-                            <span className="font-semibold text-foreground">
-                              {rec.title}
-                            </span>
-                            <span className="text-[11px] text-muted-foreground">
-                              {rec.suggestedTiming} · {rec.relativeCost.replace("_", " ")}
-                            </span>
-                          </div>
-                          <p className="mt-0.5 text-foreground/90">{rec.suggestedAction}</p>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {msg.structured?.cautions && msg.structured.cautions.length > 0 ? (
-                    <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs">
-                      {msg.structured.cautions.map((c) => (
-                        <p key={c}>• {c}</p>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {msg.structured ? (
-                    <WhyRecommendationToggle
-                      explanation={msg.structured.whyThisRecommendation}
-                      contextMeta={msg.contextMeta}
-                      dataBasis={msg.structured.dataBasis}
-                      sourceIds={msg.structured.sourceIds}
-                      citations={msg.citations}
-                      limitation={msg.structured.disclaimer}
-                    />
-                  ) : null}
-                </div>
-
-                {msg.role === "user" ? (
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
-                    <User className="size-4" aria-hidden="true" />
-                  </div>
-                ) : null}
-              </div>
+                msg={msg}
+                isLatestAssistant={msg.id === latestAssistantId}
+                isLoading={isLoading}
+                copiedId={copiedId}
+                onRegenerate={handleRegenerateLatest}
+                onCopy={(target) => void handleCopy(target)}
+              />
             ))
           )}
 
           {isLoading ? (
-            <div className="flex gap-3" aria-label="Generating response">
+            <div className="flex gap-3" aria-label="Generating response" aria-busy="true">
               <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
                 <Bot className="size-4" aria-hidden="true" />
               </div>
@@ -618,7 +455,6 @@ export function AssistantView() {
           <div ref={scrollEndRef} />
         </div>
 
-        {/* Sticky Composer Visible Inside Initial Viewport */}
         <form
           onSubmit={(e) => {
             e.preventDefault();

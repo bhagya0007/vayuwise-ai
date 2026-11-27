@@ -150,7 +150,7 @@ export function ActivityTrackerCard({
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
               {locale === "hi" ? "आज की बचत" : "Today Achieved"}
             </p>
-            <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-500">
+            <p className="mt-1 text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
               {activitySummary.dailySavingsKgCo2e.toFixed(2)} kg CO₂e
             </p>
           </div>

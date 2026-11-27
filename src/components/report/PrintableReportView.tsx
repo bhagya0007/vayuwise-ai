@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { FileText, Printer, ShieldAlert } from "lucide-react";
 import { useAppPreferences } from "@/components/providers/AppProviders";
+import { useAirQualityForecast } from "@/hooks/useAirQualityForecast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,7 +28,7 @@ import {
 import { compareTransportScenarios } from "@/lib/impact/transport-calculator";
 import { buildNormalizedPersonalizationContext } from "@/lib/personalization/engine";
 import { normalizeLegacyCommuteMode } from "@/lib/personalization/profile-storage";
-import type { AirQualityForecast, CommuteMode } from "@/types/domain";
+import type { CommuteMode } from "@/types/domain";
 
 export function PrintableReportView() {
   const {
@@ -45,31 +46,9 @@ export function PrintableReportView() {
   const [includeIndoorChecklist, setIncludeIndoorChecklist] = useState(true);
   const [includeImpact, setIncludeImpact] = useState(true);
 
-  const [forecast, setForecast] = useState<AirQualityForecast | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const params = new URLSearchParams({
-      lat: String(selectedLocation.latitude),
-      lon: String(selectedLocation.longitude),
-      name: selectedLocation.name,
-      country: selectedLocation.country,
-      countryCode: selectedLocation.countryCode,
-      timezone: selectedLocation.timezone || "auto",
-      forecastDays: "3",
-    });
-    fetch(`/api/air-quality?${params.toString()}`, { signal: controller.signal })
-      .then((r) => r.json())
-      .then((body: { ok?: boolean; forecast?: AirQualityForecast }) => {
-        if (!controller.signal.aborted && body.ok && body.forecast) {
-          setForecast(body.forecast);
-        }
-      })
-      .catch(() => {
-        // graceful null
-      });
-    return () => controller.abort();
-  }, [selectedLocation]);
+  const { activeForecast: forecast } = useAirQualityForecast(selectedLocation, {
+    forecastDays: 3,
+  });
 
   const effectiveProfile = useMemo(
     () => ({

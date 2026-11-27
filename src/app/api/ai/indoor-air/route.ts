@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { buildDeterministicIndoorFallback } from "@/lib/ai/fallbacks";
 import {
+  formatAiRouteError,
   formatAiRouteSuccess,
   parseAndValidateAiRequest,
   resolveServerAiContext,
@@ -60,33 +61,10 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return Response.json(
-    {
-      ok: false,
-      aiGenerated: false,
-      errorCode: result.errorCode ?? "UPSTREAM_ERROR",
-      message: result.message ?? "Gemini indoor coach unavailable.",
-      fallbackData: buildDeterministicIndoorFallback(context),
-      contextMeta: {
-        locationName: context.location.name,
-        timezone: context.location.timezone,
-        usAqi: context.current.usAqi,
-        severityLabel: context.current.severityLabel,
-        dataSourceType: context.provenance.dataSourceType,
-        aqiStandard: context.provenance.aqiStandard,
-        modelTimestampIso: context.provenance.modelTimestampIso,
-        freshnessStatus: context.provenance.freshnessStatus,
-        isStale: context.provenance.isStale,
-      },
-    },
-    {
-      status:
-        result.errorCode === "UNCONFIGURED" || result.errorCode === "AI_DISABLED"
-          ? 503
-          : result.errorCode === "QUOTA_EXCEEDED" || result.errorCode === "RATE_LIMITED"
-            ? 429
-            : 502,
-      headers: { "Cache-Control": "no-store" },
-    }
-  );
+  return formatAiRouteError({
+    errorCode: result.errorCode,
+    message: result.message ?? "Gemini indoor coach unavailable.",
+    fallbackData: buildDeterministicIndoorFallback(context),
+    context,
+  });
 }

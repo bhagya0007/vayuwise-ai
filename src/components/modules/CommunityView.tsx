@@ -25,6 +25,11 @@ import {
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
 import { EmptyStateCard } from "@/components/common/Controls";
 import { useAppPreferences } from "@/components/providers/AppProviders";
+import {
+  postAiEndpoint,
+  toAiLocationPayload,
+  type AiModuleErrorState,
+} from "@/lib/ai/client";
 import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
 import type { AiCommunityPlanResponse } from "@/lib/ai/schemas";
 import { Badge } from "@/components/ui/badge";
@@ -78,84 +83,49 @@ export function CommunityView() {
   const [modelUsed, setModelUsed] = useState<string | undefined>(undefined);
   const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
   const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
-  const [errorState, setErrorState] = useState<{
-    message: string;
-    errorCode?: string;
-    fallback?: AiCommunityPlanResponse;
-    contextMeta?: AiContextMeta;
-  } | null>(null);
+  const [errorState, setErrorState] =
+    useState<AiModuleErrorState<AiCommunityPlanResponse> | null>(null);
 
   const generateCommunityPlan = async () => {
     setLoading(true);
     setErrorState(null);
     setCompletedChecklist([]);
-    try {
-      const res = await fetch("/api/ai/community", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          locale,
-          location: {
-            id: selectedLocation.id,
-            name: selectedLocation.name,
-            region: selectedLocation.region,
-            country: selectedLocation.country,
-            countryCode: selectedLocation.countryCode,
-            latitude: selectedLocation.latitude,
-            longitude: selectedLocation.longitude,
-            timezone: selectedLocation.timezone,
-          },
-          communityType,
-          approxPopulation: Math.max(10, Math.min(50000, approxPopulation)),
-          budgetTier,
-          timeframe,
-          availableResources: availableResources.trim() || undefined,
-        }),
-      });
+    const result = await postAiEndpoint<AiCommunityPlanResponse>({
+      endpoint: "/api/ai/community",
+      body: {
+        locale,
+        location: toAiLocationPayload(selectedLocation),
+        communityType,
+        approxPopulation: Math.max(10, Math.min(50000, approxPopulation)),
+        budgetTier,
+        timeframe,
+        availableResources: availableResources.trim() || undefined,
+      },
+      fallbackErrorMessage: "Unable to generate community action plan.",
+      networkErrorMessage: "Network error while contacting Community Planner.",
+    });
 
-      const body = (await res.json()) as {
-        ok: boolean;
-        data?: AiCommunityPlanResponse;
-        fallbackData?: AiCommunityPlanResponse;
-        aiGenerated?: boolean;
-        provenanceMode?: "gemini" | "gemini_safety_adjusted" | "rule_based_fallback";
-        modelUsed?: string;
-        citations?: VerifiedKnowledgeSource[];
-        contextMeta?: AiContextMeta;
-        errorCode?: string;
-        message?: string;
-      };
-
-      if (!res.ok || !body.ok || !body.data) {
-        setErrorState({
-          message: body.message ?? "Unable to generate community action plan.",
-          errorCode: body.errorCode,
-          fallback: body.fallbackData,
-          contextMeta: body.contextMeta,
-        });
-        return;
-      }
-
-      setPlan(body.data);
-      setGeneratedFingerprint(recommendationFingerprint);
-      setAiGenerated(Boolean(body.aiGenerated));
-      setProvenanceMode(body.provenanceMode);
-      setModelUsed(body.modelUsed);
-      setCitations(body.citations ?? []);
-      setContextMeta(body.contextMeta ?? null);
-      addToast(
-        locale === "hi"
-          ? "सामुदायिक कार्य योजना तैयार हुई।"
-          : "Community action plan generated."
+    if (!result.ok || !result.payload) {
+      setErrorState(
+        result.error ?? { message: "Unable to generate community action plan." }
       );
-    } catch {
-      setErrorState({
-        message: "Network error while contacting Community Planner.",
-        errorCode: "NETWORK_ERROR",
-      });
-    } finally {
       setLoading(false);
+      return;
     }
+
+    setPlan(result.payload.data);
+    setGeneratedFingerprint(recommendationFingerprint);
+    setAiGenerated(result.payload.aiGenerated);
+    setProvenanceMode(result.payload.provenanceMode);
+    setModelUsed(result.payload.modelUsed);
+    setCitations(result.payload.citations);
+    setContextMeta(result.payload.contextMeta);
+    addToast(
+      locale === "hi"
+        ? "सामुदायिक कार्य योजना तैयार हुई।"
+        : "Community action plan generated."
+    );
+    setLoading(false);
   };
 
   const formatPlanText = (p: AiCommunityPlanResponse) => {

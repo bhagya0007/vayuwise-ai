@@ -122,6 +122,7 @@ export function ForecastChart({
               key={opt.id}
               type="button"
               size="xs"
+              aria-pressed={metric === opt.id}
               variant={metric === opt.id ? "default" : "outline"}
               onClick={() => setMetric(opt.id)}
             >
@@ -137,6 +138,7 @@ export function ForecastChart({
                 key={h}
                 type="button"
                 size="xs"
+                aria-pressed={horizonHours === h}
                 variant={horizonHours === h ? "default" : "outline"}
                 onClick={() => onHorizonChange(h)}
               >

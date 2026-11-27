@@ -80,7 +80,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
       {NAV_GROUPS.map((group) => (
         <div key={group.groupKey} className="space-y-1">
           {!isCollapsed ? (
-            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/80">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               {dict.navGroups[group.groupKey]}
             </p>
           ) : null}
@@ -319,7 +319,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
                   href={tab.href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors",
+                    "flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-colors",
                     active ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
@@ -333,7 +333,7 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-expanded={mobileMenuOpen}
               className={cn(
-                "flex flex-col items-center gap-0.5 rounded-lg py-1 transition-colors",
+                "flex min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-lg py-1.5 transition-colors",
                 mobileMenuOpen ? "text-primary" : "text-muted-foreground hover:text-foreground"
               )}
             >

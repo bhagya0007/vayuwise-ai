@@ -1,4 +1,5 @@
 import { connection, type NextRequest } from "next/server";
+import { getClientIp } from "@/lib/ai/route-helper";
 import { checkRateLimit } from "@/lib/cache/memory-cache";
 import { airQualityQuerySchema } from "@/lib/schemas";
 import {
@@ -6,14 +7,6 @@ import {
   UpstreamApiError,
 } from "@/services/air-quality/open-meteo";
 import type { GeoLocation } from "@/types/domain";
-
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "unknown";
-  }
-  return req.headers.get("x-real-ip") ?? "local";
-}
 
 export async function GET(request: NextRequest) {
   await connection();

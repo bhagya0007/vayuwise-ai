@@ -205,6 +205,20 @@ export type AiProvenanceMode =
   | "gemini_safety_adjusted"
   | "rule_based_fallback";
 
+export function buildContextMeta(context: GeminiAirQualityContext) {
+  return {
+    locationName: context.location.name,
+    timezone: context.location.timezone,
+    usAqi: context.current.usAqi,
+    severityLabel: context.current.severityLabel,
+    dataSourceType: context.provenance.dataSourceType,
+    aqiStandard: context.provenance.aqiStandard,
+    modelTimestampIso: context.provenance.modelTimestampIso,
+    freshnessStatus: context.provenance.freshnessStatus,
+    isStale: context.provenance.isStale,
+  };
+}
+
 export function formatAiRouteSuccess<T extends { sourceIds?: string[] }>(params: {
   data: T;
   aiGenerated: boolean;
@@ -218,7 +232,7 @@ export function formatAiRouteSuccess<T extends { sourceIds?: string[] }>(params:
   };
   context: GeminiAirQualityContext;
   fallbackReason?: string;
-}) {
+}): Response {
   const fullyReplaced = Boolean(params.safety?.fullReplacement);
   const safetyAdjusted = Boolean(
     params.safety?.conservativeOverrideApplied ||
@@ -245,18 +259,41 @@ export function formatAiRouteSuccess<T extends { sourceIds?: string[] }>(params:
       latencyMs: params.latencyMs,
       safety: params.safety,
       fallbackReason: params.fallbackReason,
-      contextMeta: {
-        locationName: params.context.location.name,
-        timezone: params.context.location.timezone,
-        usAqi: params.context.current.usAqi,
-        severityLabel: params.context.current.severityLabel,
-        dataSourceType: params.context.provenance.dataSourceType,
-        aqiStandard: params.context.provenance.aqiStandard,
-        modelTimestampIso: params.context.provenance.modelTimestampIso,
-        freshnessStatus: params.context.provenance.freshnessStatus,
-        isStale: params.context.provenance.isStale,
-      },
+      contextMeta: buildContextMeta(params.context),
     },
     { status: 200, headers: { "Cache-Control": "no-store" } }
+  );
+}
+
+/**
+ * Formats consistent server-side AI failure responses with deterministic fallback
+ * payloads, normalized HTTP status mapping, and `Cache-Control: no-store`.
+ */
+export function formatAiRouteError<TFallback>(params: {
+  errorCode?: string;
+  message: string;
+  fallbackData: TFallback;
+  context: GeminiAirQualityContext;
+  extra?: Record<string, unknown>;
+}): Response {
+  const code = params.errorCode ?? "UPSTREAM_ERROR";
+  const status =
+    code === "UNCONFIGURED" || code === "AI_DISABLED"
+      ? 503
+      : code === "QUOTA_EXCEEDED" || code === "RATE_LIMITED"
+        ? 429
+        : 502;
+
+  return Response.json(
+    {
+      ok: false,
+      aiGenerated: false,
+      errorCode: code,
+      message: params.message,
+      fallbackData: params.fallbackData,
+      ...params.extra,
+      contextMeta: buildContextMeta(params.context),
+    },
+    { status, headers: { "Cache-Control": "no-store" } }
   );
 }

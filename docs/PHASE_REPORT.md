@@ -616,3 +616,100 @@ Executed **11** live HTTP `POST` requests against the built production server (`
    git push origin main
    ```
 2. **Confirm Updated Production Deployment:** Once Vercel finishes deploying `main` to `https://vayuwise-ai-one.vercel.app/`, confirm the updated header CTA (`Get Started`), Hindi badges, and `"Impact not quantified"` fallback on `/sustainability`.
+
+---
+
+## Phase 11 — Competition Quality Optimization and Technical Excellence
+
+- **Date:** 2026-11-27
+- **Baseline Git Commit:** `70c367d` (`fix: tighten sustainability swap validation, stabilize E2E, align CTA and Hindi copy`)
+- **Status:** Completed & Verified (Prepared for Owner Commit & Push)
+
+### 1. Code Quality & Modularity Refactoring
+- **API Route & Helper Deduplication:** Extracted `buildContextMeta` and `formatAiRouteError` into [route-helper.ts](file:///e:/VayuWise-AI/src/lib/ai/route-helper.ts) (`299` lines), removed duplicated `getClientIp` implementations in [air-quality/route.ts](file:///e:/VayuWise-AI/src/app/api/air-quality/route.ts) and [locations/search/route.ts](file:///e:/VayuWise-AI/src/app/api/locations/search/route.ts), and unified error/fallback formatting across all 6 AI route handlers (`/api/ai/{chat,plan,indoor-air,sustainability,community,impact}`).
+- **Shared Client Hooks & Form Normalization:**
+  - Created [client.ts](file:///e:/VayuWise-AI/src/lib/ai/client.ts) (`toAiLocationPayload`, `postAiEndpoint`, `AiModuleErrorState`) used uniformly by `PlannerView`, `IndoorAirView`, `SustainabilityView`, and `CommunityView`.
+  - Created [useAirQualityForecast.ts](file:///e:/VayuWise-AI/src/hooks/useAirQualityForecast.ts) (abort-safe loading, explicit demo override, refresh state) shared across `DashboardView` and `PrintableReportView`.
+  - Created [useSyncedImpactInputs.ts](file:///e:/VayuWise-AI/src/hooks/useSyncedImpactInputs.ts) and [form-shared.ts](file:///e:/VayuWise-AI/src/lib/personalization/form-shared.ts) (`buildInitialProfileDraft`, shared select controls & option lists) used by `ProfileView` and `OnboardingWizard`.
+  - Added `<AiPrivacyAccordion>` to [AiTransparencyWidgets.tsx](file:///e:/VayuWise-AI/src/components/ai/AiTransparencyWidgets.tsx).
+- **Oversized Component Decomposition:** Split monolithic feature UIs into focused components:
+  - `DashboardView.tsx` (`504` lines) -> extracted `DashboardHeaderCard.tsx` (`97` lines), `DashboardForecastSection.tsx` (`253` lines), `DashboardDetailsSection.tsx` (`211` lines).
+  - `ImpactView.tsx` (`659` lines) -> extracted `ImpactComparisonChartCard.tsx` (`234` lines), `ImpactAiExplanationCard.tsx` (`158` lines), `ImpactMethodologyCard.tsx` (`139` lines).
+  - `AssistantView.tsx` (`512` lines) -> extracted `AssistantMessageBubble.tsx` (`155` lines).
+  - `ProfileView.tsx` (`462` lines) -> extracted `ProfileAdvancedFields.tsx` (`311` lines).
+
+### 2. WCAG 2.2 AA Accessibility Remediation
+- **Baseline Audit (`24` Scans Across All 12 Routes Dark + Light via `@axe-core/playwright`):** Identified `24` violation records caused by `label-content-name-mismatch` on `LocaleToggle`/`ThemeToggle` and light-theme `color-contrast` failures on muted sidebar headings and light badges/KPIs/destructive buttons.
+- **Remediation:**
+  - Updated `LocaleToggle` & `ThemeToggle` accessible names in [Controls.tsx](file:///e:/VayuWise-AI/src/components/common/Controls.tsx) to lead with visible button labels.
+  - Strengthened light-theme contrast in [WorkspaceShell.tsx](file:///e:/VayuWise-AI/src/components/layout/WorkspaceShell.tsx), [PollutantCard.tsx](file:///e:/VayuWise-AI/src/components/dashboard/PollutantCard.tsx), [LandingPage.tsx](file:///e:/VayuWise-AI/src/components/landing/LandingPage.tsx), [HeroVisualization.tsx](file:///e:/VayuWise-AI/src/components/landing/HeroVisualization.tsx), [ActivityTrackerCard.tsx](file:///e:/VayuWise-AI/src/components/modules/impact/ActivityTrackerCard.tsx), and [button.tsx](file:///e:/VayuWise-AI/src/components/ui/button.tsx) (`destructive` variant).
+  - Enforced `44px` minimum mobile bottom-nav touch targets, added `aria-pressed` state on toggle groups (`ForecastChart.tsx`, `ImpactView.tsx`, `ProfileAdvancedFields.tsx`), and added `aria-live="polite"`, `role="log"`, and `role="alert"` landmarks (`DashboardView.tsx`, `AssistantView.tsx`).
+- **Final Verification:** All 12 routes across dark and light themes (`24` scans total) recorded **`0` axe-core WCAG 2.2 AA violations**, **`0` console/page errors**, **`0` horizontal overflow at `375px`**, working `Tab` keyboard focus, and dynamic `<html lang="hi">` toggling. Automated WCAG 2.2 AA + security header checks now run permanently in [phase11_a11y.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase11_a11y.spec.ts).
+
+### 3. Security Hardening
+- Configured production HTTP security headers in [next.config.ts](file:///e:/VayuWise-AI/next.config.ts): `poweredByHeader: false`, `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy: camera=(), microphone=(), geolocation=(self)`.
+- Added `Cache-Control: no-store` to [health/route.ts](file:///e:/VayuWise-AI/src/app/api/health/route.ts).
+- Confirmed `.env.local` remains untracked and `npm audit --omit=dev` reports **`0` vulnerabilities**.
+
+### 4. Testing, Coverage & Efficiency Results (Before vs. After)
+
+| Metric | Baseline (Before Phase 11) | After Phase 11 |
+|---|---|---|
+| TypeScript (`tsc --noEmit`) | `0` errors | **`0` errors** |
+| ESLint (`npm run lint`) | `0` errors | **`0` errors, `0` warnings** |
+| Vitest Unit & Integration Tests | `83` tests (`10` files) | **`99` tests (`13` files)** |
+| Vitest `src/**` Coverage (Stmt / Branch / Fn / Line) | `52.63%` / `37.00%` / `40.25%` / `54.06%` | **`61.38%` / `45.09%` / `44.68%` / `62.89%`** |
+| Critical Business Logic Coverage (`api`, `config`, `lib`, `services`) | Partial (`api` `0%` direct tests; `fallbacks` `42.85%`) | **`92.21%` statements (`72.70%` branches)** |
+| Playwright Chromium E2E Suite | `30` tests (`8` files) | **`32` tests (`9` files)** |
+| WCAG 2.2 AA Axe Violations (12 routes dark + light) | `24` violation records | **`0` violations** |
+| HTTP Security Headers & CSP Errors | Default Next headers (no CSP) | **6 hardened headers + `X-Powered-By` removed (`0` CSP errors)** |
+| Production Dependency Vulnerabilities (`npm audit --omit=dev`) | `0` vulnerabilities | **`0` vulnerabilities** |
+| Client `.next/static/chunks` JS Bundle | `2,020.9 KB` (`26` files) | **`2,037.0 KB` (`27` files)** |
+| Git-Eligible Repository Size | `1.41 MB` (`133` files) | **`1.46 MB` (`149` files, `< 10 MB`)** |
+
+### 5. Live Runtime Integration Verification (`next start -p 3089`)
+- `GET /api/health`: HTTP `200`, `status: "ok"`, `geminiConfigured: true`, `geminiModel: "gemini-3.1-flash-lite"`.
+- `GET /api/air-quality` (`New Delhi`): HTTP `200`, real Open-Meteo `usAqi: 223`, `48` hourly forecast points.
+- All 6 genuine Gemini POST endpoints (`/api/ai/chat`, `/api/ai/plan`, `/api/ai/indoor-air`, `/api/ai/sustainability`, `/api/ai/community`, `/api/ai/impact`): all returned HTTP `200` with `ok: true` and `aiGenerated: true`.
+
+### 6. Pending Owner Action
+- Review working tree changes (`git status`), then commit and push to `main` when ready to update `https://github.com/bhagya0007/vayuwise-ai` and `https://vayuwise-ai-one.vercel.app/`.
+
+---
+
+## Phase 11.1 — Final Competition Release Gate
+
+- **Date:** 2026-11-27
+- **Status:** Completed & Verified (Prepared for Owner Commit & Push)
+
+### 1. Complexity, Duplication & Targeted Maintainability
+- Measured AST McCabe cyclomatic complexity and cross-file 6-line code blocks across `src/`.
+- **Resolved Significant Hotspot:** Extracted the 6-step form panels from [OnboardingWizard.tsx](file:///e:/VayuWise-AI/src/components/onboarding/OnboardingWizard.tsx) (`775` lines -> `254` lines) into [OnboardingStepPanel.tsx](file:///e:/VayuWise-AI/src/components/onboarding/OnboardingStepPanel.tsx) (`584` lines across focused per-step components), eliminating the `702`-line / `CC=40` monolithic render block while keeping identical UI behavior. Remaining 6-line overlaps across AI module views consist of standard shadcn/helper import lists and shallow state declarations.
+
+### 2. Critical Logic Branch Coverage (`phase11_1_branches.test.ts`)
+- Added [phase11_1_branches.test.ts](file:///e:/VayuWise-AI/tests/unit/phase11_1_branches.test.ts) targeting API/origin validation, AI safety overrides (EN & HI across chat, planner, indoor, sustainability, and community), US EPA AQI breakpoints, freshness status boundaries (`<= 15 min` fresh / `> 15 min` stale / invalid unavailable), transient Open-Meteo retries, personalization schedule/lifestyle combinations, and exposure-calculator bounds.
+- Expanded Vitest coverage from `99` tests (`13` files) to **`104` tests (`14` files)**:
+  - **All `src/**`:** `61.27%` statements, **`45.95%` branches** (up from `37.00%` baseline), `44.23%` functions, `62.72%` lines.
+  - **Critical Core (`src/app/api`, `src/config`, `src/lib`, `src/services`):** **`92.64%` statements**, **`75.09%` branches**.
+
+### 3. Emission Factor Sources, Numerical Values, Units & Boundaries Verified
+Audited all 12 entries in [emission-factors.ts](file:///e:/VayuWise-AI/src/lib/impact/emission-factors.ts) and [transport-calculator.ts](file:///e:/VayuWise-AI/src/lib/impact/transport-calculator.ts):
+- `INDIA_GRID_EF_KG_CO2_PER_KWH = 0.727` (`CEA CO2 Baseline Database v20.0`, Dec 2024, FY 2023-24 weighted avg).
+- Derived EV factors match explicit multiplication: Electric Car `0.10905 kg CO2/vkm` (`0.15 kWh/km × 0.727`) and Electric Two-Wheeler `0.018175 kg CO2/vkm` (`0.025 kWh/km × 0.727`), flagged `isDerivedEstimate: true` under `electricity_generation_scope2`.
+- Tailpipe (`tailpipe_ttw`): Petrol Car `0.163 kg CO2e/vkm`, Diesel Car `0.17 kg CO2e/vkm` (`UK DESNZ 2024` + `India GHG Program v1.0` ranges); CNG Car `0.068 kg CO2/vkm` and Petrol Two-Wheeler `0.0387 kg CO2/vkm` (`India GHG Program v1.0`).
+- Passenger-km modes (`bus = 0.015161 kg CO2/pkm`, `metro_rail = 0.025 kg CO2e/pkm`) are never re-divided by passenger occupancy; shared carpool divides `0.163` by confirmed occupancy (`2–5`); active/remote (`walk`, `cycle`, `work_from_home`) are strictly `0` operational transport emissions (`zero_operational`). Zero-baseline comparisons return `percentageChange: null` cleanly without `NaN`/`Infinity`.
+
+### 4. Production CSP, Geolocation, Charts, PWA & Runtime Verification (`next start -p 3089`)
+- **Zero CSP or Runtime Errors:** Browser `securitypolicyviolation` listeners, `console.error`, and `pageerror` all recorded **`0` errors** across Gemini assistant replies, Dashboard Recharts SVG rendering (`1` `.recharts-surface`), mocked browser geolocation (`19.076, 72.8777`), PWA `/manifest.webmanifest` (`200`), and Service Worker `/sw.js` (`200`, `navigator.serviceWorker.register("/sw.js")` succeeded).
+- **Desktop (`1440×900`) Navigation Timings (`next start`):** `/` (`TTFB 16ms`, `FCP 144ms`, `Load 160ms`), `/dashboard` (`TTFB 4ms`, `FCP 108ms`, `Load 84ms`), `/impact` (`TTFB 3ms`, `FCP 56ms`, `Load 45ms`).
+- **Mobile (`375×812`) Navigation Timings (`next start`):** `/` (`TTFB 2ms`, `FCP 128ms`, `Load 185ms`, `overflow: false`), `/dashboard` (`TTFB 2ms`, `FCP 44ms`, `Load 48ms`, `overflow: false`), `/impact` (`TTFB 2ms`, `FCP 68ms`, `Load 55ms`, `overflow: false`).
+- **Live Open-Meteo & All 6 Genuine Gemini Endpoints:** `/api/health` (`200`), `/api/air-quality` (`200`, `usAqi: 223`, `48` hours), and `/api/ai/{chat,plan,indoor-air,sustainability,community,impact}` all returned HTTP `200`, `ok: true`, `aiGenerated: true`, `modelUsed: "gemini-3.1-flash-lite"` (`2.88s–16.31s`).
+
+### 5. Git History & Client Bundle Credential Scan
+- Scanned complete `git log -p --all` history and `.next/static/**` client bundles: **`.env.local` has never been committed**, `.next/static` contains **`0` credential or `GEMINI_API_KEY` matches**, and all 5 `AIza...` pattern hits in Git commit `576ebf28` are verified synthetic unit-test redaction fixtures (`AIzaSyD1234567...`, `AIzaSyFakeKey1...`).
+
+### 6. Honest Remaining Limitations
+- Per-isolate sliding-window rate limiters (`memory-cache.ts`) protect warm Node isolates cleanly but are not shared globally across cold serverless horizontal replicas without an external Redis store (complemented via documented Vercel Firewall IP rate-limiting rules).
+- Client CSP includes `'unsafe-inline'` for `script-src` and `style-src` because Next.js App Router static/hydration bootstrap scripts and Recharts/Tailwind inline styling rely on them unless full per-request nonce SSR middleware is introduced across all 25 routes.
+- `evaluateDataFreshness` applies strict binary `<= 15 min` (`fresh`) vs `> 15 min` (`stale`) thresholds (`cached` status is assigned separately inside `OpenMeteoAirQualityService` on in-memory cache hits).
+- Production dependencies pass `npm audit --omit=dev` (`0` vulnerabilities); dev-only QA dependencies (`@vitest/coverage-v8`, `@axe-core/playwright`) are excluded from client bundles and `npm audit --omit=dev`.
