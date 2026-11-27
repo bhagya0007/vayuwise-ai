@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
 import {
@@ -45,7 +45,20 @@ const FEATURE_ICONS = [
 export function LandingPage() {
   const { dict, locale } = useAppPreferences();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement | null>(null);
   const { landing } = dict;
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileNavOpen(false);
+        requestAnimationFrame(() => menuBtnRef.current?.focus());
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mobileNavOpen]);
 
   return (
     <div id="top" className="min-h-screen flex flex-col bg-background text-foreground">
@@ -88,12 +101,14 @@ export function LandingPage() {
               <ArrowRight className="size-3.5" aria-hidden="true" />
             </Link>
             <Button
+              ref={menuBtnRef}
               type="button"
               variant="outline"
               size="icon-sm"
               className="lg:hidden"
               onClick={() => setMobileNavOpen((prev) => !prev)}
               aria-expanded={mobileNavOpen}
+              aria-controls="landing-mobile-nav"
               aria-label={dict.common.menuLabel}
             >
               {mobileNavOpen ? (
@@ -106,7 +121,7 @@ export function LandingPage() {
         </div>
 
         {mobileNavOpen ? (
-          <div className="border-t border-border bg-card px-4 py-4 lg:hidden">
+          <div id="landing-mobile-nav" className="border-t border-border bg-card px-4 py-4 lg:hidden">
             <nav
               aria-label="Mobile landing navigation"
               className="flex flex-col gap-3 text-sm font-medium"

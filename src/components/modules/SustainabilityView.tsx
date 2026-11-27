@@ -16,17 +16,12 @@ import {
   AiPrivacyAccordion,
   AiProvenanceBadge,
   WhyRecommendationToggle,
-  type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
 import { EmptyStateCard } from "@/components/common/Controls";
 import { useAppPreferences } from "@/components/providers/AppProviders";
-import {
-  postAiEndpoint,
-  toAiLocationPayload,
-  type AiModuleErrorState,
-} from "@/lib/ai/client";
-import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
+import { useAiModuleRequest } from "@/hooks/useAiModuleRequest";
+import { toAiLocationPayload } from "@/lib/ai/client";
 import type { AiSustainabilityResponse } from "@/lib/ai/schemas";
 import { evaluateSustainabilityTransportSwap } from "@/lib/impact/sustainability-swap";
 import { Badge } from "@/components/ui/badge";
@@ -52,9 +47,6 @@ export function SustainabilityView() {
     addToast,
   } = useAppPreferences();
 
-  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(
-    null
-  );
   const [focusArea, setFocusArea] = useState<
     | "all"
     | "daily_commute"
@@ -64,17 +56,31 @@ export function SustainabilityView() {
     | "community_sustainability"
   >("all");
   const [budgetTier, setBudgetTier] = useState<BudgetTier>(profile.budgetTier);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<AiSustainabilityResponse | null>(null);
-  const [aiGenerated, setAiGenerated] = useState(false);
-  const [provenanceMode, setProvenanceMode] = useState<
-    "gemini" | "gemini_safety_adjusted" | "rule_based_fallback" | undefined
-  >(undefined);
-  const [modelUsed, setModelUsed] = useState<string | undefined>(undefined);
-  const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
-  const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
-  const [errorState, setErrorState] =
-    useState<AiModuleErrorState<AiSustainabilityResponse> | null>(null);
+
+  const {
+    loading,
+    data,
+    generatedFingerprint,
+    aiGenerated,
+    provenanceMode,
+    modelUsed,
+    citations,
+    contextMeta,
+    errorState,
+    execute,
+    applyFallback,
+  } = useAiModuleRequest<AiSustainabilityResponse>({
+    endpoint: "/api/ai/sustainability",
+    locationKey: selectedLocation.id,
+    fallbackErrorMessage: "Unable to reach Sustainability Coach.",
+    networkErrorMessage: "Network error while contacting Sustainability Coach.",
+    successToastMessage:
+      locale === "hi"
+        ? "टिकाऊ विकल्प तैयार किए गए।"
+        : "Sustainable alternatives generated.",
+    recommendationFingerprint,
+    addToast,
+  });
 
   const evaluateAltSwap = (alt: AiSustainabilityResponse["alternatives"][number]) =>
     evaluateSustainabilityTransportSwap({
@@ -89,42 +95,13 @@ export function SustainabilityView() {
     });
 
   const generateAlternatives = async () => {
-    setLoading(true);
-    setErrorState(null);
-    const result = await postAiEndpoint<AiSustainabilityResponse>({
-      endpoint: "/api/ai/sustainability",
-      body: {
-        locale,
-        location: toAiLocationPayload(selectedLocation),
-        profile,
-        focusArea,
-        budgetTier,
-      },
-      fallbackErrorMessage: "Unable to reach Sustainability Coach.",
-      networkErrorMessage: "Network error while contacting Sustainability Coach.",
+    await execute({
+      locale,
+      location: toAiLocationPayload(selectedLocation),
+      profile,
+      focusArea,
+      budgetTier,
     });
-
-    if (!result.ok || !result.payload) {
-      setErrorState(
-        result.error ?? { message: "Unable to reach Sustainability Coach." }
-      );
-      setLoading(false);
-      return;
-    }
-
-    setData(result.payload.data);
-    setGeneratedFingerprint(recommendationFingerprint);
-    setAiGenerated(result.payload.aiGenerated);
-    setProvenanceMode(result.payload.provenanceMode);
-    setModelUsed(result.payload.modelUsed);
-    setCitations(result.payload.citations);
-    setContextMeta(result.payload.contextMeta);
-    addToast(
-      locale === "hi"
-        ? "टिकाऊ विकल्प तैयार किए गए।"
-        : "Sustainable alternatives generated."
-    );
-    setLoading(false);
   };
 
   const handleLogAlternative = (alt: AiSustainabilityResponse["alternatives"][number]) => {
@@ -271,14 +248,7 @@ export function SustainabilityView() {
           errorCode={errorState.errorCode}
           onRetry={() => void generateAlternatives()}
           hasFallback={Boolean(errorState.fallback)}
-          onUseFallback={() => {
-            if (!errorState.fallback) return;
-            setData(errorState.fallback);
-            setAiGenerated(false);
-            setModelUsed(undefined);
-            setContextMeta(errorState.contextMeta ?? null);
-            setErrorState(null);
-          }}
+          onUseFallback={applyFallback}
         />
       ) : null}
 

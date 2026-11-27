@@ -1,0 +1,39 @@
+name: CI Verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      GEMINI_AI_ENABLED: "false"
+      NEXT_PUBLIC_APP_NAME: "VayuWise AI"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies cleanly
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npm run typecheck
+
+      - name: ESLint check
+        run: npm run lint
+
+      - name: Unit and integration test suite
+        run: npm run test
+
+      - name: Production Next.js build
+        run: npm run build

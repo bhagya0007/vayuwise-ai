@@ -26,7 +26,7 @@ export function HeroVisualization({
       className="relative overflow-hidden rounded-3xl border border-border bg-card p-4 shadow-xl sm:p-6"
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-900 dark:text-emerald-300">
           <Sparkles className="size-3" aria-hidden="true" />
           {previewBadge}
         </span>
@@ -175,7 +175,10 @@ export function HeroVisualization({
                 248 <span className="text-xs font-normal text-[#A8C9B7]">· {isHi ? "डेमो" : "Demo"}</span>
               </p>
             </div>
-            <Badge className="border-amber-400/35 bg-amber-500/15 text-[#FFB547] hover:bg-amber-500/20">
+            <Badge
+              variant="outline"
+              className="border-amber-400/45 bg-[#1b221a] text-[#ffd48a] hover:bg-[#242c22]"
+            >
               {isHi ? "बहुत अस्वस्थ" : "Very Unhealthy"}
             </Badge>
           </div>

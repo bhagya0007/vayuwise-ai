@@ -182,26 +182,3 @@ export const openMeteoGeocodingResultSchema = z.object({
 export const openMeteoGeocodingResponseSchema = z.object({
   results: z.array(openMeteoGeocodingResultSchema).optional(),
 });
-
-export const routineTimeBlockSchema = z.object({
-  window: z.enum(["morning", "midday", "evening"]),
-  recommendedActivity: z.string().min(1),
-  outdoorSafetyAdvice: z.string().min(1),
-  indoorAction: z.string().min(1),
-  rationale: z.string().min(1),
-});
-
-export const dailyRoutineResponseSchema = z.object({
-  headline: z.string().min(1),
-  healthProtectionPriority: z.boolean(),
-  blocks: z.array(routineTimeBlockSchema).min(1).max(4),
-  safetyDisclaimer: z.string().min(1),
-});
-
-export const geminiChatRequestSchema = z.object({
-  message: z.string().trim().min(1).max(1500),
-  locale: localeSchema.default("en"),
-  usAqi: z.number().min(0).max(1000).optional(),
-  cityName: z.string().trim().max(120).optional(),
-  profile: familyProfileSchema.optional(),
-});

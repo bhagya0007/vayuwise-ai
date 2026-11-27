@@ -49,7 +49,12 @@ export function ForecastChart({
 
   if (loading) {
     return (
-      <div className="space-y-3" aria-label="Loading pollution forecast">
+      <div
+        className="space-y-3"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading pollution forecast"
+      >
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );

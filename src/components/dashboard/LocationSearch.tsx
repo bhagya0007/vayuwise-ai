@@ -220,6 +220,9 @@ export function LocationSearch({ onSelectLocation }: LocationSearchProps) {
           role="combobox"
           aria-expanded={isOpen}
           aria-controls="city-search-listbox"
+          aria-activedescendant={
+            isOpen && activeIndex >= 0 ? `city-option-${activeIndex}` : undefined
+          }
           aria-label={dict.dashboard.searchLabel}
           placeholder={dict.dashboard.searchPlaceholder}
           value={query}
@@ -280,6 +283,7 @@ export function LocationSearch({ onSelectLocation }: LocationSearchProps) {
               displayedList.map((loc, idx) => (
                 <button
                   key={`${loc.id}-${loc.latitude}-${loc.longitude}`}
+                  id={`city-option-${idx}`}
                   type="button"
                   role="option"
                   aria-selected={idx === activeIndex}

@@ -14,9 +14,53 @@ interface CacheEntry<T> {
   staleUntilMs: number;
 }
 
+interface RateLimitBucket {
+  timestamps: number[];
+  windowMs: number;
+}
+
 const cacheStore = new Map<string, CacheEntry<unknown>>();
 const inflightRequests = new Map<string, Promise<unknown>>();
-const rateLimitBuckets = new Map<string, number[]>();
+const rateLimitBuckets = new Map<string, RateLimitBucket>();
+
+export const MAX_CACHE_ENTRIES = 500;
+export const MAX_RATE_LIMIT_BUCKETS = 2000;
+
+function pruneCacheStore(nowMs: number): void {
+  if (cacheStore.size < MAX_CACHE_ENTRIES) return;
+  for (const [k, entry] of cacheStore.entries()) {
+    if (nowMs > entry.staleUntilMs) {
+      cacheStore.delete(k);
+    }
+  }
+  while (cacheStore.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = cacheStore.keys().next().value;
+    if (oldestKey === undefined) break;
+    cacheStore.delete(oldestKey);
+  }
+}
+
+function pruneExpiredRateLimitBuckets(nowMs: number): void {
+  for (const [k, bucket] of rateLimitBuckets.entries()) {
+    if (!bucket.timestamps.some((ts) => nowMs - ts < bucket.windowMs)) {
+      rateLimitBuckets.delete(k);
+    }
+  }
+}
+
+function computeConservativeRetryAfterSeconds(nowMs: number): number {
+  let earliestResetMs = Number.POSITIVE_INFINITY;
+  for (const bucket of rateLimitBuckets.values()) {
+    const valid = bucket.timestamps.filter((ts) => nowMs - ts < bucket.windowMs);
+    if (valid.length === 0) continue;
+    const oldestTs = valid[0];
+    if (oldestTs !== undefined) {
+      earliestResetMs = Math.min(earliestResetMs, oldestTs + bucket.windowMs);
+    }
+  }
+  if (!Number.isFinite(earliestResetMs)) return 1;
+  return Math.max(1, Math.ceil((earliestResetMs - nowMs) / 1000));
+}
 
 export interface CacheLookupResult<T> {
   hit: boolean;
@@ -79,6 +123,11 @@ export function setCachedEntry<T>(
   staleWindowMs: number = 24 * 60 * 60 * 1000,
   nowMs: number = Date.now()
 ): void {
+  if (cacheStore.has(key)) {
+    cacheStore.delete(key);
+  } else {
+    pruneCacheStore(nowMs);
+  }
   cacheStore.set(key, {
     value,
     createdAtMs: nowMs,
@@ -109,22 +158,59 @@ export function checkRateLimit(
   windowMs: number,
   nowMs: number = Date.now()
 ): { allowed: boolean; retryAfterSeconds: number } {
-  const existing = rateLimitBuckets.get(bucketKey) ?? [];
-  const valid = existing.filter((ts) => nowMs - ts < windowMs);
+  const existing = rateLimitBuckets.get(bucketKey);
 
-  if (valid.length >= maxRequests) {
-    const oldest = valid[0] ?? nowMs;
-    const retryAfterSeconds = Math.max(
-      1,
-      Math.ceil((oldest + windowMs - nowMs) / 1000)
-    );
-    rateLimitBuckets.set(bucketKey, valid);
-    return { allowed: false, retryAfterSeconds };
+  if (existing) {
+    const valid = existing.timestamps.filter((ts) => nowMs - ts < windowMs);
+    if (valid.length >= maxRequests) {
+      const oldest = valid[0] ?? nowMs;
+      const retryAfterSeconds = Math.max(
+        1,
+        Math.ceil((oldest + windowMs - nowMs) / 1000)
+      );
+      rateLimitBuckets.delete(bucketKey);
+      rateLimitBuckets.set(bucketKey, {
+        timestamps: valid,
+        windowMs,
+      });
+      return { allowed: false, retryAfterSeconds };
+    }
+
+    valid.push(nowMs);
+    rateLimitBuckets.delete(bucketKey);
+    rateLimitBuckets.set(bucketKey, {
+      timestamps: valid,
+      windowMs,
+    });
+    return { allowed: true, retryAfterSeconds: 0 };
   }
 
-  valid.push(nowMs);
-  rateLimitBuckets.set(bucketKey, valid);
+  if (rateLimitBuckets.size >= MAX_RATE_LIMIT_BUCKETS) {
+    pruneExpiredRateLimitBuckets(nowMs);
+    if (rateLimitBuckets.size >= MAX_RATE_LIMIT_BUCKETS) {
+      // Preserve all active/blocked buckets; throttle overflow admission conservatively.
+      return {
+        allowed: false,
+        retryAfterSeconds: computeConservativeRetryAfterSeconds(nowMs),
+      };
+    }
+  }
+
+  rateLimitBuckets.set(bucketKey, {
+    timestamps: [nowMs],
+    windowMs,
+  });
   return { allowed: true, retryAfterSeconds: 0 };
+}
+
+export function getRateLimitStatsForTests(): {
+  size: number;
+  keysInOrder: string[];
+} {
+  return {
+    size: rateLimitBuckets.size,
+    keysInOrder: [...rateLimitBuckets.keys()],
+  };
 }
 
 export function clearMemoryCacheForTests(): void {

@@ -552,6 +552,166 @@ export const PUBLIC_HEALTH_REFERENCES = [
   },
 ] as const;
 
+function buildGuidanceItemsEn(
+  healthPriority: boolean,
+  windowPhrase: string | null
+): RuleBasedGuidanceItem[] {
+  const priority = healthPriority ? "protective" : "advisory";
+  return [
+    {
+      id: "g-exercise",
+      category: "outdoor_exercise",
+      title: "Outdoor Exercise",
+      action: healthPriority
+        ? "Postpone outdoor running or intense cycling; switch to indoor mobility, yoga, or home workouts."
+        : "Moderate outdoor activity is reasonable away from heavy traffic corridors.",
+      rationale: "Higher breathing rates during exertion draw more fine particulates deeper into airways.",
+      priority,
+    },
+    {
+      id: "g-children",
+      category: "children",
+      title: "Children's Activities",
+      action: healthPriority
+        ? "Keep children's vigorous play indoors and check school smog advisories."
+        : "Prefer midday shaded play spaces away from idling vehicle pickup zones.",
+      rationale: "Developing lungs breathe more air per kilogram of body weight than adults.",
+      priority,
+    },
+    {
+      id: "g-travel",
+      category: "essential_travel",
+      title: "Essential Travel",
+      action: healthPriority
+        ? "Batch essential errands and wear a snug, well-fitting N95/FFP2 respirator outdoors."
+        : "Combine trips during relatively lower-pollution midday hours where feasible.",
+      rationale: "Reducing total outdoor dwell time lowers cumulative particulate inhalation.",
+      priority,
+    },
+    {
+      id: "g-commute",
+      category: "commuting",
+      title: "Commuting Choice",
+      action: healthPriority
+        ? "Prioritize enclosed metro/AC transit or remote work over open-air walking/cycling during severe smog."
+        : "Choose metro, public bus, or carpooling to cut per-passenger emissions.",
+      rationale: "Personal health protection overrides active open-air commuting when AQI is unhealthy.",
+      priority,
+    },
+    {
+      id: "g-indoor",
+      category: "indoor_smoke",
+      title: "Indoor Smoke Reduction",
+      action:
+        "Use kitchen range exhaust strictly while cooking to vent concentrated frying smoke/NO2, then turn it off (ordinary exhaust fans pull polluted outdoor air inside through leaks when ambient air is unhealthy). Damp-mop floors and avoid incense or candles.",
+      rationale:
+        "Cooking smoke spikes indoor particulates rapidly, while continuous exhaust fan draw worsens infiltration during severe smog.",
+      priority: "protective",
+    },
+    {
+      id: "g-ventilation",
+      category: "ventilation_timing",
+      title: "Ventilation Timing",
+      action:
+        healthPriority || !windowPhrase
+          ? "Do not assume late-night or early-morning outdoor air is cleaner; keep exterior doors/windows sealed until ambient haze improves, and rely on source control or HEPA filtration."
+          : `Cross-ventilate briefly (~10–15 min) during practical daytime hours (${windowPhrase}) when outdoor haze dips, avoiding rush-hour traffic peaks.`,
+      rationale:
+        "Overnight and early-morning temperature inversions frequently trap pollution near ground level, and regional models do not measure your room.",
+      priority,
+    },
+    {
+      id: "g-sensitive",
+      category: "sensitive_groups",
+      title: "Sensitive Populations",
+      action:
+        "Older adults and anyone with asthma/heart/lung conditions should limit outdoor exposure and keep prescribed rescue medications accessible.",
+      rationale: "Sensitive groups face elevated risk of airway irritation and symptom flare-ups.",
+      priority: "protective",
+    },
+  ];
+}
+
+function buildGuidanceItemsHi(
+  healthPriority: boolean,
+  windowPhrase: string | null
+): RuleBasedGuidanceItem[] {
+  const priority = healthPriority ? "protective" : "advisory";
+  return [
+    {
+      id: "g-exercise",
+      category: "outdoor_exercise",
+      title: "बाहरी व्यायाम",
+      action: healthPriority
+        ? "बाहरी जॉगिंग, साइकिलिंग या भारी व्यायाम टालें; घर के भीतर स्ट्रेचिंग या योग करें।"
+        : "हल्का बाहरी व्यायाम संभव है, लेकिन भारी ट्रैफ़िक सड़कों से दूर रहें।",
+      rationale: "तेज व्यायाम से श्वसन दर बढ़ने पर प्रदूषक अधिक अंदर जाते हैं।",
+      priority,
+    },
+    {
+      id: "g-children",
+      category: "children",
+      title: "बच्चों की गतिविधियाँ",
+      action: healthPriority
+        ? "बच्चों का खेल समय घर के भीतर रखें; स्कूल आउटडोर ड्रिल कम करें।"
+        : "बच्चों के बाहर खेलने से पहले स्थानीय धुंध की स्थिति जांचें।",
+      rationale: "बच्चों के फेफड़े विकसित हो रहे होते हैं और वे अधिक हवा सांस में लेते हैं।",
+      priority,
+    },
+    {
+      id: "g-travel",
+      category: "essential_travel",
+      title: "आवश्यक यात्रा",
+      action: healthPriority
+        ? "आवश्यक बाहर जाने पर अच्छी तरह फिट होने वाला N95/FFP2 मास्क उपयोग करें।"
+        : "अपेक्षाकृत कम-प्रदूषण समय में यात्रा को एक साथ समेटें।",
+      rationale: "गैर-जरूरी समय में बाहरी संपर्क घटाने से कण भार कम होता है।",
+      priority,
+    },
+    {
+      id: "g-commute",
+      category: "commuting",
+      title: "दैनिक आवागमन",
+      action: healthPriority
+        ? "गंभीर प्रदूषण में खुली हवा की पैदल/साइकिल यात्रा के बजाय बंद मेट्रो, एसी बस या WFH चुनें।"
+        : "उत्सर्जन घटाने के लिए मेट्रो, बस या कारपूल को प्राथमिकता दें।",
+      rationale: "गंभीर स्मॉग में पर्यावरण-अनुकूल खुली यात्रा की तुलना में श्वसन सुरक्षा अधिक महत्वपूर्ण है।",
+      priority,
+    },
+    {
+      id: "g-indoor",
+      category: "indoor_smoke",
+      title: "इनडोर धुआं नियंत्रण",
+      action:
+        "खाना पकाते समय ही किचन एग्जॉस्ट चलाएं (पकाने के बाद बंद कर दें क्योंकि बाहरी स्मॉग में साधारण एग्जॉस्ट बाहर की हवा खींच सकता है); गीला पोंछा लगाएं और अगरबत्ती/धूप से बचें।",
+      rationale:
+        "बंद कमरों में इनडोर दहन PM₂.₅ को तेज़ी से बढ़ाता है, पर बाहरी स्मॉग में अनावश्यक एग्जॉस्ट से बचाव ज़रूरी है।",
+      priority: "protective",
+    },
+    {
+      id: "g-ventilation",
+      category: "ventilation_timing",
+      title: "वेंटिलेशन समय",
+      action:
+        healthPriority || !windowPhrase
+          ? "देर रात या तड़के की बाहरी हवा को स्वच्छ मानकर खिड़कियां न खोलें; बाहरी सुधार दिखने तक दरवाजे-दरारें सील रखें और HEPA/स्रोत नियंत्रण अपनाएं।"
+          : `केवल दिन के व्यावहारिक समय (${windowPhrase}) में 10–15 मिनट संक्षिप्त वेंटिलेशन करें; रात में खिड़कियां बंद रखें।`,
+      rationale:
+        "देर रात और सुबह तापमान व्युत्क्रमण अक्सर कणों को ज़मीन के पास रोक देता है; मॉडल्ड डेटा स्थानीय सड़क प्रदूषण नहीं मापता।",
+      priority,
+    },
+    {
+      id: "g-sensitive",
+      category: "sensitive_groups",
+      title: "संवेदनशील समूह",
+      action:
+        "वरिष्ठजनों और श्वसन संवेदनशील सदस्यों को धुंध में बाहर न जाने दें; डॉक्टर की निर्धारित दवाएं पास रखें।",
+      rationale: "संवेदनशील समूहों में सूजन व सांस की तकलीफ का जोखिम अधिक होता है।",
+      priority: "protective",
+    },
+  ];
+}
+
 export function buildRuleBasedGuidance(
   forecast: AirQualityForecast,
   profile: FamilyProfile,
@@ -563,22 +723,27 @@ export function buildRuleBasedGuidance(
     profile.hasRespiratorySensitivity ||
     profile.childrenCount > 0 ||
     profile.seniorsCount > 0;
-  const severeOrUnhealthy = aqi !== null && aqi >= 151;
-  const elevatedForSensitive =
+  const healthPriority =
     aqi !== null && (aqi >= 151 || (aqi >= 101 && sensitiveHousehold));
-  const healthPriority = severeOrUnhealthy || elevatedForSensitive;
 
   // Use ONLY practical daytime active hours (never midnight/00:30 dips!) for recommended errands
-  const windowPhrase =
-    lowerWindow?.practicalWindow
-      ? formatWindowRangeInTz(
-          lowerWindow.practicalWindow.startIso,
-          lowerWindow.practicalWindow.endIso,
-          forecast.location.timezone
-        )
-      : null;
+  const windowPhrase = lowerWindow?.practicalWindow
+    ? formatWindowRangeInTz(
+        lowerWindow.practicalWindow.startIso,
+        lowerWindow.practicalWindow.endIso,
+        forecast.location.timezone
+      )
+    : null;
 
   if (locale === "hi") {
+    const whyUnavailable = "वर्तमान AQI मान अनुपलब्ध है, इसलिए एहतियाती सामान्य मार्गदर्शन दिखाया जा रहा है।";
+    const whyValue = healthPriority
+      ? `वर्तमान मॉडल्ड US AQI (${Math.round(aqi ?? 0)}) ऊंचा है; तेज सांस लेने से सूक्ष्म कणों का संपर्क बढ़ता है।`
+      : `वर्तमान मॉडल्ड US AQI (${Math.round(aqi ?? 0)}) अपेक्षाकृत कम श्रेणी में है, फिर भी ट्रैफ़िक व धुएं से बचें।`;
+    const primaryBalanced = windowPhrase
+      ? `अपेक्षाकृत कम अवधि (~${windowPhrase}) में आवश्यक काम निपटाएं और सार्वजनिक परिवहन चुनें।`
+      : "व्यस्त सड़कों से दूर समय पर बाहरी काम करें और इनडोर धुआं न होने दें।";
+
     return {
       sourceType: "rule_based",
       isAiGenerated: false,
@@ -586,96 +751,27 @@ export function buildRuleBasedGuidance(
       headline: healthPriority
         ? "स्वास्थ्य सुरक्षा प्राथमिकता: बाहरी श्रम कम करें और इनडोर हवा सुरक्षित रखें"
         : "मॉडल्ड परिस्थितियां अपेक्षाकृत संतुलित हैं — दिनचर्या में सतर्कता रखें",
-      whyItMatters:
-        aqi === null
-          ? "वर्तमान AQI मान अनुपलब्ध है, इसलिए एहतियाती सामान्य मार्गदर्शन दिखाया जा रहा है।"
-          : healthPriority
-            ? `वर्तमान मॉडल्ड US AQI (${Math.round(aqi)}) ऊंचा है; तेज सांस लेने से सूक्ष्म कणों का संपर्क बढ़ता है।`
-            : `वर्तमान मॉडल्ड US AQI (${Math.round(aqi)}) अपेक्षाकृत कम श्रेणी में है, फिर भी ट्रैफ़िक व धुएं से बचें।`,
+      whyItMatters: aqi === null ? whyUnavailable : whyValue,
       expectedQualitativeBenefit: healthPriority
         ? "सुबह/शाम के पीक स्मॉग के दौरान उच्च कण-प्रवेश और श्वसन तनाव को कम करने में मदद।"
         : "दैनिक स्वास्थ्य और कम-उत्सर्जन यात्रा विकल्पों के बीच सुरक्षित संतुलन।",
       recommendedPrimaryAction: healthPriority
         ? "बाहरी दौड़/साइकिलिंग को इनडोर विकल्प में बदलें और बाहर जाने पर अच्छी फिट वाला N95/FFP2 मास्क पहनें।"
-        : windowPhrase
-          ? `अपेक्षाकृत कम अवधि (~${windowPhrase}) में आवश्यक काम निपटाएं और सार्वजनिक परिवहन चुनें।`
-          : "व्यस्त सड़कों से दूर समय पर बाहरी काम करें और इनडोर धुआं न होने दें।",
-      items: [
-        {
-          id: "g-exercise",
-          category: "outdoor_exercise",
-          title: "बाहरी व्यायाम",
-          action: healthPriority
-            ? "बाहरी जॉगिंग, साइकिलिंग या भारी व्यायाम टालें; घर के भीतर स्ट्रेचिंग या योग करें।"
-            : "हल्का बाहरी व्यायाम संभव है, लेकिन भारी ट्रैफ़िक सड़कों से दूर रहें।",
-          rationale: "तेज व्यायाम से श्वसन दर बढ़ने पर प्रदूषक अधिक अंदर जाते हैं।",
-          priority: healthPriority ? "protective" : "advisory",
-        },
-        {
-          id: "g-children",
-          category: "children",
-          title: "बच्चों की गतिविधियाँ",
-          action: healthPriority
-            ? "बच्चों का खेल समय घर के भीतर रखें; स्कूल आउटडोर ड्रिल कम करें।"
-            : "बच्चों के बाहर खेलने से पहले स्थानीय धुंध की स्थिति जांचें।",
-          rationale: "बच्चों के फेफड़े विकसित हो रहे होते हैं और वे अधिक हवा सांस में लेते हैं।",
-          priority: healthPriority ? "protective" : "advisory",
-        },
-        {
-          id: "g-travel",
-          category: "essential_travel",
-          title: "आवश्यक यात्रा",
-          action: healthPriority
-            ? "आवश्यक बाहर जाने पर अच्छी तरह फिट होने वाला N95/FFP2 मास्क उपयोग करें।"
-            : "अपेक्षाकृत कम-प्रदूषण समय में यात्रा को एक साथ समेटें।",
-          rationale: "गैर-जरूरी समय में बाहरी संपर्क घटाने से कण भार कम होता है।",
-          priority: healthPriority ? "protective" : "advisory",
-        },
-        {
-          id: "g-commute",
-          category: "commuting",
-          title: "दैनिक आवागमन",
-          action: healthPriority
-            ? "गंभीर प्रदूषण में खुली हवा की पैदल/साइकिल यात्रा के बजाय बंद मेट्रो, एसी बस या WFH चुनें।"
-            : "उत्सर्जन घटाने के लिए मेट्रो, बस या कारपूल को प्राथमिकता दें।",
-          rationale:
-            "गंभीर स्मॉग में पर्यावरण-अनुकूल खुली यात्रा की तुलना में श्वसन सुरक्षा अधिक महत्वपूर्ण है।",
-          priority: healthPriority ? "protective" : "advisory",
-        },
-        {
-          id: "g-indoor",
-          category: "indoor_smoke",
-          title: "इनडोर धुआं नियंत्रण",
-          action:
-            "खाना पकाते समय ही किचन एग्जॉस्ट चलाएं (पकाने के बाद बंद कर दें क्योंकि बाहरी स्मॉग में साधारण एग्जॉस्ट बाहर की हवा खींच सकता है); गीला पोंछा लगाएं और अगरबत्ती/धूप से बचें।",
-          rationale: "बंद कमरों में इनडोर दहन PM₂.₅ को तेज़ी से बढ़ाता है, पर बाहरी स्मॉग में अनावश्यक एग्जॉस्ट से बचाव ज़रूरी है।",
-          priority: "protective",
-        },
-        {
-          id: "g-ventilation",
-          category: "ventilation_timing",
-          title: "वेंटिलेशन समय",
-          action: healthPriority || !windowPhrase
-            ? "देर रात या तड़के की बाहरी हवा को स्वच्छ मानकर खिड़कियां न खोलें; बाहरी सुधार दिखने तक दरवाजे-दरारें सील रखें और HEPA/स्रोत नियंत्रण अपनाएं।"
-            : `केवल दिन के व्यावहारिक समय (${windowPhrase}) में 10–15 मिनट संक्षिप्त वेंटिलेशन करें; रात में खिड़कियां बंद रखें।`,
-          rationale: "देर रात और सुबह तापमान व्युत्क्रमण अक्सर कणों को ज़मीन के पास रोक देता है; मॉडल्ड डेटा स्थानीय सड़क प्रदूषण नहीं मापता।",
-          priority: healthPriority ? "protective" : "advisory",
-        },
-        {
-          id: "g-sensitive",
-          category: "sensitive_groups",
-          title: "संवेदनशील समूह",
-          action:
-            "वरिष्ठजनों और श्वसन संवेदनशील सदस्यों को धुंध में बाहर न जाने दें; डॉक्टर की निर्धारित दवाएं पास रखें।",
-          rationale: "संवेदनशील समूहों में सूजन व सांस की तकलीफ का जोखिम अधिक होता है।",
-          priority: "protective",
-        },
-      ],
+        : primaryBalanced,
+      items: buildGuidanceItemsHi(healthPriority, windowPhrase),
       references: PUBLIC_HEALTH_REFERENCES,
       medicalDisclaimer:
         "यह नियम-आधारित पर्यावरणीय मार्गदर्शन है, चिकित्सीय निदान नहीं। सीने में दर्द, सांस फूलने या गंभीर लक्षणों पर तुरंत चिकित्सकीय सहायता लें।",
     };
   }
+
+  const whyUnavailable = "Current US AQI is unavailable, so conservative protective baseline guidance is shown.";
+  const whyValue = healthPriority
+    ? `Modeled US AQI is ${Math.round(aqi ?? 0)}, where elevated particulate inhalation outweighs outdoor eco-commute benefits.`
+    : `Modeled US AQI is ${Math.round(aqi ?? 0)}, though street-level exhaust near busy roads can still exceed regional averages.`;
+  const primaryBalanced = windowPhrase
+    ? `Schedule essential outdoor errands near ~${windowPhrase} and choose metro/bus transit to lower emissions.`
+    : "Prefer enclosed public transit or carpooling and keep indoor cooking/smoke ventilated.";
 
   return {
     sourceType: "rule_based",
@@ -684,97 +780,14 @@ export function buildRuleBasedGuidance(
     headline: healthPriority
       ? "Health Protection Priority: Shift strenuous activity indoors & limit exposure"
       : "Conditions allow cautious routine planning — minimize traffic-corridor exposure",
-    whyItMatters:
-      aqi === null
-        ? "Current US AQI is unavailable, so conservative protective baseline guidance is shown."
-        : healthPriority
-          ? `Modeled US AQI is ${Math.round(aqi)}, where elevated particulate inhalation outweighs outdoor eco-commute benefits.`
-          : `Modeled US AQI is ${Math.round(aqi)}, though street-level exhaust near busy roads can still exceed regional averages.`,
+    whyItMatters: aqi === null ? whyUnavailable : whyValue,
     expectedQualitativeBenefit: healthPriority
       ? "Helps lower acute inhalation of fine particulates during stagnant morning/evening smog windows."
       : "Balances daily mobility needs with cleaner timing and indoor source control.",
     recommendedPrimaryAction: healthPriority
       ? "Move workouts indoors, use enclosed transit or WFH instead of open-road cycling, and wear a well-fitted N95/FFP2 mask for essential outdoor trips."
-      : windowPhrase
-        ? `Schedule essential outdoor errands near ~${windowPhrase} and choose metro/bus transit to lower emissions.`
-        : "Prefer enclosed public transit or carpooling and keep indoor cooking/smoke ventilated.",
-    items: [
-      {
-        id: "g-exercise",
-        category: "outdoor_exercise",
-        title: "Outdoor Exercise",
-        action: healthPriority
-          ? "Postpone outdoor running or intense cycling; switch to indoor mobility, yoga, or home workouts."
-          : "Moderate outdoor activity is reasonable away from heavy traffic corridors.",
-        rationale:
-          "Higher breathing rates during exertion draw more fine particulates deeper into airways.",
-        priority: healthPriority ? "protective" : "advisory",
-      },
-      {
-        id: "g-children",
-        category: "children",
-        title: "Children's Activities",
-        action: healthPriority
-          ? "Keep children's vigorous play indoors and check school smog advisories."
-          : "Prefer midday shaded play spaces away from idling vehicle pickup zones.",
-        rationale:
-          "Developing lungs breathe more air per kilogram of body weight than adults.",
-        priority: healthPriority ? "protective" : "advisory",
-      },
-      {
-        id: "g-travel",
-        category: "essential_travel",
-        title: "Essential Travel",
-        action: healthPriority
-          ? "Batch essential errands and wear a snug, well-fitting N95/FFP2 respirator outdoors."
-          : "Combine trips during relatively lower-pollution midday hours where feasible.",
-        rationale:
-          "Reducing total outdoor dwell time lowers cumulative particulate inhalation.",
-        priority: healthPriority ? "protective" : "advisory",
-      },
-      {
-        id: "g-commute",
-        category: "commuting",
-        title: "Commuting Choice",
-        action: healthPriority
-          ? "Prioritize enclosed metro/AC transit or remote work over open-air walking/cycling during severe smog."
-          : "Choose metro, public bus, or carpooling to cut per-passenger emissions.",
-        rationale:
-          "Personal health protection overrides active open-air commuting when AQI is unhealthy.",
-        priority: healthPriority ? "protective" : "advisory",
-      },
-      {
-        id: "g-indoor",
-        category: "indoor_smoke",
-        title: "Indoor Smoke Reduction",
-        action:
-          "Use kitchen range exhaust strictly while cooking to vent concentrated frying smoke/NO2, then turn it off (ordinary exhaust fans pull polluted outdoor air inside through leaks when ambient air is unhealthy). Damp-mop floors and avoid incense or candles.",
-        rationale:
-          "Cooking smoke spikes indoor particulates rapidly, while continuous exhaust fan draw worsens infiltration during severe smog.",
-        priority: "protective",
-      },
-      {
-        id: "g-ventilation",
-        category: "ventilation_timing",
-        title: "Ventilation Timing",
-        action: healthPriority || !windowPhrase
-          ? "Do not assume late-night or early-morning outdoor air is cleaner; keep exterior doors/windows sealed until ambient haze improves, and rely on source control or HEPA filtration."
-          : `Cross-ventilate briefly (~10–15 min) during practical daytime hours (${windowPhrase}) when outdoor haze dips, avoiding rush-hour traffic peaks.`,
-        rationale:
-          "Overnight and early-morning temperature inversions frequently trap pollution near ground level, and regional models do not measure your room.",
-        priority: healthPriority ? "protective" : "advisory",
-      },
-      {
-        id: "g-sensitive",
-        category: "sensitive_groups",
-        title: "Sensitive Populations",
-        action:
-          "Older adults and anyone with asthma/heart/lung conditions should limit outdoor exposure and keep prescribed rescue medications accessible.",
-        rationale:
-          "Sensitive groups face elevated risk of airway irritation and symptom flare-ups.",
-        priority: "protective",
-      },
-    ],
+      : primaryBalanced,
+    items: buildGuidanceItemsEn(healthPriority, windowPhrase),
     references: PUBLIC_HEALTH_REFERENCES,
     medicalDisclaimer:
       "Rule-based environmental guidance only — not medical advice or diagnosis. Seek prompt medical care if experiencing shortness of breath, chest pain, or worsening symptoms.",
@@ -789,6 +802,107 @@ export interface AirQualityInsightCard {
   tone: "neutral" | "positive" | "caution";
 }
 
+function buildTrendInsight(
+  summary: ForecastSummary,
+  locale: Locale
+): AirQualityInsightCard {
+  const isHi = locale === "hi";
+  const labels = isHi
+    ? {
+        rising: "बढ़ता रुझान",
+        falling: "घटता रुझान",
+        steady: "स्थिर रुझान",
+        insufficient_data: "अपर्याप्त डेटा",
+      }
+    : {
+        rising: "Rising trend",
+        falling: "Easing trend",
+        steady: "Steady levels",
+        insufficient_data: "Insufficient data",
+      };
+
+  const detail =
+    summary.lowestPoint && summary.highestPoint
+      ? isHi
+        ? `सीमा: ${summary.lowestPoint.usAqi} से ${summary.highestPoint.usAqi} US AQI (${summary.availableHours} घंटे)`
+        : `Range ${summary.lowestPoint.usAqi}–${summary.highestPoint.usAqi} US AQI across ${summary.availableHours} valid hours.`
+      : isHi
+        ? "पर्याप्त प्रति घंटा डेटा उपलब्ध नहीं।"
+        : "Insufficient hourly forecast points available.";
+
+  return {
+    id: "insight-trend",
+    label: isHi ? "24-घंटे का रुझान" : "24h Pollution Trend",
+    value: labels[summary.trend],
+    detail,
+    tone: summary.trend === "rising" ? "caution" : "neutral",
+  };
+}
+
+function buildWindowInsight(
+  lowerWindow: LowerExposureWindowResult,
+  tz: string,
+  locale: Locale
+): AirQualityInsightCard {
+  const isHi = locale === "hi";
+  const pw = lowerWindow.practicalWindow;
+  const practicalTime = pw ? formatWindowRangeInTz(pw.startIso, pw.endIso, tz) : null;
+  const lowTime = lowerWindow.bestWindow
+    ? formatWindowRangeInTz(
+        lowerWindow.bestWindow.startIso,
+        lowerWindow.bestWindow.endIso,
+        tz
+      )
+    : isHi
+      ? "अनिश्चित"
+      : "Unavailable";
+
+  const value =
+    practicalTime && pw
+      ? `${practicalTime} (~${pw.averageUsAqi} AQI)`
+      : isHi
+        ? "इनडोर प्राथमिकता / टालें"
+        : "Indoors Recommended";
+
+  const detail = lowerWindow.bestWindow
+    ? isHi
+      ? `मॉडल न्यूनतम अवधि: ${lowTime} (~${lowerWindow.bestWindow.averageUsAqi} AQI)। ${lowerWindow.practicalWindowNoteHi}`
+      : `Forecast lowest: ${lowTime} (~${lowerWindow.bestWindow.averageUsAqi} AQI). ${lowerWindow.practicalWindowNoteEn}`
+    : lowerWindow.cautionEn;
+
+  return {
+    id: "insight-window",
+    label: isHi ? "पूर्वानुमान न्यूनतम व व्यावहारिक समय" : "Forecast Low vs Practical Window",
+    value,
+    detail,
+    tone: pw && !lowerWindow.postponeOutdoorExercise ? "positive" : "caution",
+  };
+}
+
+function buildFreshnessInsight(
+  forecast: AirQualityForecast,
+  locale: Locale
+): AirQualityInsightCard {
+  const isHi = locale === "hi";
+  const srcType = forecast.provenance.dataSourceType;
+  let value = isHi ? "लाइव मॉडल्ड" : "Live Modeled";
+  if (srcType === "demonstration") {
+    value = isHi ? "डेमो मोड" : "Demonstration";
+  } else if (forecast.provenance.isStale) {
+    value = isHi ? "पुराना कैश्ड डेटा" : "Stale Cache";
+  } else if (srcType === "cached") {
+    value = isHi ? "कैश्ड मॉडल्ड" : "Cached Modeled";
+  }
+
+  return {
+    id: "insight-freshness",
+    label: isHi ? "डेटा ताज़गी व स्रोत" : "Freshness & Reliability",
+    value,
+    detail: forecast.provenance.aqiStandardNote,
+    tone: forecast.provenance.isStale ? "caution" : "neutral",
+  };
+}
+
 export function buildAirQualityInsights(
   forecast: AirQualityForecast,
   summary: ForecastSummary,
@@ -797,121 +911,36 @@ export function buildAirQualityInsights(
   dominant: DominantPollutantResult,
   locale: Locale
 ): AirQualityInsightCard[] {
-  const tz = forecast.location.timezone;
-  const trendLabel =
-    locale === "hi"
-      ? summary.trend === "rising"
-        ? "बढ़ता रुझान"
-        : summary.trend === "falling"
-          ? "घटता रुझान"
-          : summary.trend === "steady"
-            ? "स्थिर रुझान"
-            : "अपर्याप्त डेटा"
-      : summary.trend === "rising"
-        ? "Rising trend"
-        : summary.trend === "falling"
-          ? "Easing trend"
-          : summary.trend === "steady"
-            ? "Steady levels"
-            : "Insufficient data";
-
-  const lowTime = lowerWindow.bestWindow
-    ? formatWindowRangeInTz(
-        lowerWindow.bestWindow.startIso,
-        lowerWindow.bestWindow.endIso,
-        tz
-      )
-    : locale === "hi"
-      ? "अनिश्चित"
-      : "Unavailable";
-
-  const practicalTime = lowerWindow.practicalWindow
-    ? formatWindowRangeInTz(
-        lowerWindow.practicalWindow.startIso,
-        lowerWindow.practicalWindow.endIso,
-        tz
-      )
-    : null;
-
+  const isHi = locale === "hi";
   return [
-    {
-      id: "insight-trend",
-      label: locale === "hi" ? "24-घंटे का रुझान" : "24h Pollution Trend",
-      value: trendLabel,
-      detail:
-        summary.lowestPoint && summary.highestPoint
-          ? locale === "hi"
-            ? `सीमा: ${summary.lowestPoint.usAqi} से ${summary.highestPoint.usAqi} US AQI (${summary.availableHours} घंटे)`
-            : `Range ${summary.lowestPoint.usAqi}–${summary.highestPoint.usAqi} US AQI across ${summary.availableHours} valid hours.`
-          : locale === "hi"
-            ? "पर्याप्त प्रति घंटा डेटा उपलब्ध नहीं।"
-            : "Insufficient hourly forecast points available.",
-      tone: summary.trend === "rising" ? "caution" : "neutral",
-    },
-    {
-      id: "insight-window",
-      label:
-        locale === "hi"
-          ? "पूर्वानुमान न्यूनतम व व्यावहारिक समय"
-          : "Forecast Low vs Practical Window",
-      value: practicalTime
-        ? `${practicalTime} (~${lowerWindow.practicalWindow!.averageUsAqi} AQI)`
-        : locale === "hi"
-          ? "इनडोर प्राथमिकता / टालें"
-          : "Indoors Recommended",
-      detail: lowerWindow.bestWindow
-        ? locale === "hi"
-          ? `मॉडल न्यूनतम अवधि: ${lowTime} (~${lowerWindow.bestWindow.averageUsAqi} AQI)। ${lowerWindow.practicalWindowNoteHi}`
-          : `Forecast lowest: ${lowTime} (~${lowerWindow.bestWindow.averageUsAqi} AQI). ${lowerWindow.practicalWindowNoteEn}`
-        : lowerWindow.cautionEn,
-      tone: lowerWindow.practicalWindow && !lowerWindow.postponeOutdoorExercise ? "positive" : "caution",
-    },
+    buildTrendInsight(summary, locale),
+    buildWindowInsight(lowerWindow, forecast.location.timezone, locale),
     {
       id: "insight-dominant",
-      label: locale === "hi" ? "प्रमुख प्रदूषक" : "Dominant Pollutant",
-      value: dominant.reliable && dominant.dominantPollutant
-        ? `${POLLUTANT_DISPLAY_META[dominant.dominantPollutant].symbol} (AQI ${dominant.subindexValue})`
-        : locale === "hi"
-          ? "निर्धारण संभव नहीं"
-          : "Indeterminate",
-      detail: locale === "hi" ? dominant.reasonHi : dominant.reasonEn,
+      label: isHi ? "प्रमुख प्रदूषक" : "Dominant Pollutant",
+      value:
+        dominant.reliable && dominant.dominantPollutant
+          ? `${POLLUTANT_DISPLAY_META[dominant.dominantPollutant].symbol} (AQI ${dominant.subindexValue})`
+          : isHi
+            ? "निर्धारण संभव नहीं"
+            : "Indeterminate",
+      detail: isHi ? dominant.reasonHi : dominant.reasonEn,
       tone: "neutral",
     },
     {
       id: "insight-action",
-      label: locale === "hi" ? "मुख्य गतिविधि समायोजन" : "Activity Adjustment",
+      label: isHi ? "मुख्य गतिविधि समायोजन" : "Activity Adjustment",
       value: guidance.healthProtectionPriority
-        ? locale === "hi"
+        ? isHi
           ? "इनडोर प्राथमिकता"
           : "Prioritize Indoors"
-        : locale === "hi"
+        : isHi
           ? "संतुलित सतर्कता"
           : "Cautious Routine",
       detail: guidance.recommendedPrimaryAction,
       tone: guidance.healthProtectionPriority ? "caution" : "positive",
     },
-    {
-      id: "insight-freshness",
-      label: locale === "hi" ? "डेटा ताज़गी व स्रोत" : "Freshness & Reliability",
-      value:
-        forecast.provenance.dataSourceType === "demonstration"
-          ? locale === "hi"
-            ? "डेमो मोड"
-            : "Demonstration"
-          : forecast.provenance.isStale
-            ? locale === "hi"
-              ? "पुराना कैश्ड डेटा"
-              : "Stale Cache"
-            : forecast.provenance.dataSourceType === "cached"
-              ? locale === "hi"
-                ? "कैश्ड मॉडल्ड"
-                : "Cached Modeled"
-              : locale === "hi"
-                ? "लाइव मॉडल्ड"
-                : "Live Modeled",
-      detail: forecast.provenance.aqiStandardNote,
-      tone: forecast.provenance.isStale ? "caution" : "neutral",
-    },
+    buildFreshnessInsight(forecast, locale),
   ];
 }
 

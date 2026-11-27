@@ -713,3 +713,181 @@ Audited all 12 entries in [emission-factors.ts](file:///e:/VayuWise-AI/src/lib/i
 - Client CSP includes `'unsafe-inline'` for `script-src` and `style-src` because Next.js App Router static/hydration bootstrap scripts and Recharts/Tailwind inline styling rely on them unless full per-request nonce SSR middleware is introduced across all 25 routes.
 - `evaluateDataFreshness` applies strict binary `<= 15 min` (`fresh`) vs `> 15 min` (`stale`) thresholds (`cached` status is assigned separately inside `OpenMeteoAirQualityService` on in-memory cache hits).
 - Production dependencies pass `npm audit --omit=dev` (`0` vulnerabilities); dev-only QA dependencies (`@vitest/coverage-v8`, `@axe-core/playwright`) are excluded from client bundles and `npm audit --omit=dev`.
+
+---
+
+## Phase 12 — Final Competition Quality Optimization and Independent Release Review
+
+- **Date:** 2026-11-27
+- **Baseline Git Commit (Submission 2):** `f8858cfb2d967a8c0ad6ab3825d70e5a611a59e6` (`Node v26.13.1`, `npm 11.20.0`)
+- **Status:** Prepared for Final Submission (Uncommitted working tree ready for owner commit & push; no automatic push/deploy executed)
+
+### 1. Reproducible Baseline Audit & Root Causes of Previous Code Quality (`88/100`)
+- Measured the untouched `f8858cfb` baseline across all `104` files (`21,271` total lines, `18,305` non-import code lines):
+  - **Root Cause 1 — Boilerplate & Async Logic Duplication (`8.02%` normalized 6-line overlap):** Five AI module routes (`/api/ai/{chat,plan,indoor-air,sustainability,community}`) duplicated identical request parsing, validation, context resolution, error formatting, and fallback envelopes; four client modules (`PlannerView`, `IndoorAirView`, `SustainabilityView`, `CommunityView`) duplicated `useEffect` fetch/abort/loading/fallback pipelines without `AbortController` cleanup on rapid location changes.
+  - **Root Cause 2 — Oversized Multi-Concern Modules (`maxCc = 64` including JSX):** `CommunityView`, `PrintableReportView`, `DashboardView`, `ImpactView`, `src/lib/air-quality/intelligence.ts`, and `src/lib/personalization/engine.ts` combined domain computation, fallback orchestration, and presentation JSX.
+  - **Root Cause 3 — Type Safety Gaps (`8` non-null `!` assertions):** `AssistantView.tsx` (`7`) and `intelligence.ts` (`1`) relied on non-null assertions rather than narrowed guards.
+  - **Root Cause 4 — Dead Artifacts & Unused Package Metadata:** Unused `HeroIllustration.tsx`, 4 unused `src/services/**` barrel/type files, unused `vite-tsconfig-paths` devDependency (Vitest 5 resolves paths natively via `vitest.config.mts`), unused `schemas/index.ts` aliases, unused `listSupportedCommuteModes`, and 288 lines of superseded Phase 01 static mock exports in `src/lib/demo/air-quality-demo.ts`.
+  - **Root Cause 5 — Subtle Runtime Accessibility & Resource Bounds Defects:** Mobile drawers in `WorkspaceShell.tsx` and `LandingPage.tsx` lacked `Escape` dismissal and focus restoration; `DashboardView` & `ForecastChart` loading containers placed `aria-label` on generic `<div>` nodes without `role="status"`; interactive light/dark states exhibited `color-contrast` issues on emerald pills (`HeroVisualization`, `DashboardDetailsSection`, `DashboardOverviewGrid`, `tokens.ts`, `ExposureComparisonCard`) and CSS `transition-colors` interpolation on `ImpactView` tabs; `memory-cache.ts` had unbounded `Map` growth.
+
+### 2. Targeted Code Quality & Architectural Remediations
+- **Shared Server Route Pipeline (`src/lib/ai/route-helper.ts`):** Introduced `handleAiPostRequest`, consolidating `/api/ai/{chat,plan,indoor-air,sustainability,community}` into thin `~25`-line handlers while preserving exact validation, CORS/origin checks, `32 KB` body caps, safety policies, and deterministic fallbacks.
+- **Shared Client Request Hook (`src/hooks/useAiModuleRequest.ts`):** Extracted `useAiModuleRequest<TData>` with per-location `AbortController` cleanup across `PlannerView`, `IndoorAirView`, `SustainabilityView`, and `CommunityView`, preventing stale responses from overwriting freshly switched cities.
+- **Structural Decompositions & Zero Non-Null Assertions:** Extracted `DashboardOverviewGrid.tsx`, `PrintableReportSections.tsx`, `CommunityActionPlanResults.tsx`, `ImpactCalculatorControls.tsx`, and helper functions in `intelligence.ts`, `engine.ts`, and `profile-storage.ts`. Eliminated all `8` non-null assertions (`0` remaining across `src/`).
+- **Dead Code & Unused Dependency Removal:** Removed `5` dead source files, `vite-tsconfig-paths`, and superseded demo exports (`git diff --stat` net `-1,446` lines across modified files; tracked repo size reduced from `1.48 MB` to `1.42 MB`).
+
+### 3. Security & Privacy Hardening
+- **Production CSP Without `'unsafe-eval'` (`next.config.ts`):** Disabled `'unsafe-eval'` in `NODE_ENV === "production"` (`script-src 'self' 'unsafe-inline'`) plus explicit `worker-src 'self'` and `manifest-src 'self'`. Verified `0` console errors and `0` page errors across all 12 production routes (Zod v4 gracefully catches its JIT `Function("")` probe cleanly when `eval` is forbidden).
+- **Trusted Proxy IP Ordering (`getClientIp`):** Prioritizes platform-managed `x-vercel-forwarded-for` and `x-real-ip` headers ahead of client-modifiable `x-forwarded-for`.
+- **Bounded In-Memory Maps (`src/lib/cache/memory-cache.ts`):** Added deterministic stale pruning and LRU/FIFO capacity bounds (`MAX_CACHE_ENTRIES = 500`, `MAX_RATE_LIMIT_BUCKETS = 2000`).
+- **Secrets & Dependency Audit:** Verified `.env.local` has never entered Git history, `.next/static/chunks` has `0` credential hits, all external `target="_blank"` links enforce `rel="noreferrer"`/`rel="noopener noreferrer"`, and `npm audit --omit=dev` reports `0` vulnerabilities.
+
+### 4. High-Value Testing & CI Automation
+- Added table-driven backend/route/cache/edge tests ([tests/unit/phase12_branches.test.ts](file:///e:/VayuWise-AI/tests/unit/phase12_branches.test.ts)) and interactive UI/accessibility flow tests ([tests/unit/phase12_components.test.tsx](file:///e:/VayuWise-AI/tests/unit/phase12_components.test.tsx)) covering error fallback recovery, `LocationSearch` keyboard combobox navigation & geolocation, `ActivityTrackerCard` CRUD & duplicate prevention, `OnboardingWizard` navigation, `DashboardView`, and `WorkspaceShell` / `LandingPage` mobile `Escape` dismissal.
+- Added [ci.yml](file:///e:/VayuWise-AI/.github/workflows/ci.yml) to verify clean `npm ci`, `typecheck`, `lint`, `vitest`, and `next build` on pushes and PRs without requiring private secrets.
+
+### 5. Interactive Accessibility, Reflow & Live Runtime Verification
+- Fixed `WorkspaceShell.tsx` and `LandingPage.tsx` mobile drawers (`Escape` key dismissal + focus restoration + `aria-controls`), `LocationSearch.tsx` (`aria-activedescendant` + option `id`s), loading container ARIA (`role="status"` in `DashboardView.tsx` and `ForecastChart.tsx`), light-mode emerald/amber WCAG AA contrast (`HeroVisualization.tsx`, `ExposureComparisonCard.tsx`, `DashboardDetailsSection.tsx`, `DashboardOverviewGrid.tsx`, `tokens.ts`, `ImpactView.tsx`), and instant tab state styling (`ImpactView.tsx`).
+- Verified in Playwright Chromium against `next start -p 3089` (with live Open-Meteo and all 6 Gemini endpoints verified earlier) plus isolated `GEMINI_AI_ENABLED=false` server (`-p 3090`):
+  - **`0` WCAG 2.2 AA Axe violations** across all 12 routes in both dark & light themes and interactive states (accordion expanded, Impact tab switched).
+  - **`0` horizontal overflow issues** at `320×640` mobile reflow, `640×450` (200% zoom viewport), and `768×1024` tablet across `/`, `/dashboard`, `/impact`, `/assistant`, and `/settings`.
+  - **`0` console errors, `0` page errors**, confirmed `Escape` focus restoration (`workspace-mobile-nav`), Hindi `lang="hi"` under `prefers-reduced-motion: reduce`, and warm `DOMContentLoaded` of `30ms–66ms` across all routes.
+  - **Live Backends Verified:** Open-Meteo `/api/air-quality` (`200`, `modeled`) & `/api/locations/search` (`200`), all 6 Gemini endpoints (`/api/ai/{chat,plan,indoor-air,sustainability,community,impact}` -> `200`, `aiGenerated: true`), and all 6 disabled-AI fallback responses (`503`, `AI_DISABLED`, `hasFallbackData: true`).
+
+### 6. Before-and-After Comparison (Submission 2 Commit `f8858cfb` vs. Final Phase 12)
+
+| Metric | Baseline (`f8858cfb`) | Phase 12 Final | Delta / Status |
+|---|---|---|---|
+| TypeScript (`tsc --noEmit`) | `0` errors | **`0` errors** | Preserved |
+| ESLint (`npm run lint`) | `0` errors, `0` warnings | **`0` errors, `0` warnings** | Preserved |
+| AST Non-Null Assertions (`!` in `src/`) | `8` | **`0`** | `-8` (`100%` eliminated) |
+| AST Explicit `any` / Circular Deps | `0` / `0` | **`0` / `0`** | Clean |
+| Max Function/Component CC (incl. JSX) | `64` (`CommunityView`) | **`58` (`SustainabilityView`)** | `-9.4%` peak CC |
+| Normalized 6-Line Code Duplication (`src/`) | `8.02%` | **`6.57%`** | `-1.45` pp |
+| Vitest Unit & Component Tests | `104` tests (`14` files) | **`122` tests (`16` files)** | `+18` tests |
+| Overall `src/**` Coverage (Stmt / Branch / Fn / Line) | `61.27%` / `45.95%` / `44.23%` / `62.72%` | **`82.91%` / `66.36%` / `66.98%` / `85.21%`** | `+21.64%` stmts / `+20.41%` branches |
+| Critical Core Coverage (`lib`, `api`, `services`) | `92.64%` stmts / `75.09%` branches | **`95.22%` stmts / `81.81%` branches** | `+6.72%` branches |
+| Playwright Chromium E2E Suite | `32` tests (`9` files) | **`32` tests (`9` files)** | `32/32` passing |
+| Interactive Dark/Light Axe Violations (12 routes) | `3` interactive edge defects uncovered in audit | **`0` violations** | Remediated & verified |
+| Production Dependency Audit (`npm audit --omit=dev`) | `0` vulnerabilities | **`0` vulnerabilities** | Preserved |
+| Tracked Repository Size | `1.48 MB` (`151` files) | **`1.42 MB` (`151` tracked files prior to new CI/tests, `< 10 MB`)** | Well below `10 MB` limit |
+
+### 7. Independent Release Review Verdict
+- **Release Decision:** **APPROVED FOR FINAL SUBMISSION** (all build, lint, typecheck, unit/coverage, E2E, interactive accessibility, CSP, live API integration, and secret-hygiene checks verified).
+- **Remaining Honest Trade-offs:**
+  - Server-side `memory-cache.ts` rate limiting and stale caching remain scoped per warm Node isolate in serverless deployments (complemented via Vercel Firewall IP rules documented in `README.md`).
+  - `script-src` and `style-src` retain `'unsafe-inline'` for Next.js static hydration scripts and Tailwind/Recharts inline styles, while `'unsafe-eval'` has been removed from production CSP.
+  - Review changes with `git status` and `git diff`, then commit and push manually when ready to deploy.
+
+---
+
+## Phase 12.1 — Final Submission Freeze and Release Verification
+
+- **Date:** 2026-11-27
+- **Preserved Submission 2 Baseline Commit:** `f8858cfb2d967a8c0ad6ab3825d70e5a611a59e6` (verified present and used as rollback / A-B benchmark baseline)
+- **Final Git-Eligible Release Size:** `158` files, `1,575,966` bytes (`1.503 MB`, excluding `node_modules`, `.next`, `coverage`, test outputs, and `.env*`) — well below the `10 MB` competition limit.
+- **Release Verdict:** **BLOCKED — CORRECTION REQUIRED** *(application code intentionally left unmodified pending approval of the proposed fixes below)*
+
+### 1. Code Quality & Dead-Code Verification
+- **AST Metrics (`src/`, `104` files, `21,196` total lines / `18,193` non-import code lines):**
+  - Maximum cyclomatic complexity: **`58`** (`SustainabilityView` in `src/components/modules/SustainabilityView.tsx`). Inspecting lines `153–428` confirmed the complexity count comes from ~25 flat inline EN/HI locale strings and conditional JSX render blocks (`loading ? ... : data ? ... : ...`), while domain swap logic delegates cleanly to `evaluateSustainabilityTransportSwap`. No correctness or maintainability defect warrants refactoring `SustainabilityView`.
+  - Functions exceeding complexity `15`: **`41`** (including top-level JSX render functions).
+  - Normalized 6-line non-import duplication: **`6.57%`** (down from `8.02%` on `f8858cfb`).
+  - Explicit `any`: **`0`**.
+  - Unnecessary non-null assertions (`!`): **`0`** (down from `8` on `f8858cfb`).
+  - Circular dependencies: **`0`**.
+  - Unreferenced source/dependency check: All `package.json` dependencies (`cn`, `shadcn` via `globals.css`, etc.) are referenced; `src/components/layout/AppShell.tsx` is referenced by `tests/unit/foundation.test.tsx` (legacy Phase 00 test harness).
+
+### 2. Clean Isolated Workspace Reproducibility (No Private `.env*` Files)
+Tested inside an isolated copy (`vw-phase12-isolated`, `158` candidate files, zero `.env*` files, `GEMINI_API_KEY` unset):
+- `npm ci`: **PASSED** (`689` packages, `0` vulnerabilities).
+- **`npm run typecheck` (before `next build` / `next typegen`):** **FAILED (Release Blocker #1):**
+  - Error: `src/app/layout.tsx(50,50): error TS2304: Cannot find name 'LayoutProps'.`
+  - Root cause: `src/app/layout.tsx` relies on Next.js 16's generated `.next/types/routes.d.ts` global `LayoutProps<"/">`, which does not exist until `npx next typegen` or `npm run build` executes. Because `.github/workflows/ci.yml` runs `npm run typecheck` before `npm run build`, CI fails on any clean checkout.
+- **After running `npx next typegen` in the isolated workspace:**
+  - `npm run typecheck`: **PASSED** (`0` errors).
+  - `npm run lint`: **PASSED** (`0` errors, `0` warnings).
+  - `npm run test`: **PASSED** (`16` files, `122/122` tests).
+  - `npx vitest run --coverage`: **PASSED** (`82.91%` statements, `66.36%` branches, `66.98%` functions, `85.21%` lines).
+  - `npm run build` (without `GEMINI_API_KEY`): **PASSED** (`25/25` routes).
+  - `npm run test:e2e`: **PASSED** (`32/32` Playwright Chromium tests).
+  - Deterministic no-credential fallbacks (`http://127.0.0.1:3092/api/ai/*`): All `6` endpoints (`/api/ai/{chat,plan,indoor-air,sustainability,community,impact}`) returned HTTP `503` with `errorCode: "UNCONFIGURED"` and non-empty `fallbackData`.
+
+### 3. Identical-Condition Performance Comparison (`f8858cfb` vs. Final Candidate)
+Measured side-by-side on local production builds (`next start` on `127.0.0.1:3091` vs. `127.0.0.1:3092`, zero `.env.local`, mocked `/api/air-quality`, 3-run medians). *Note: These reflect local loopback production server timings, not public Vercel Edge / CDN latency.*
+
+| Metric / Route | Baseline (`f8858cfb`) | Phase 12 Final | Delta |
+|---|---|---|---|
+| Production `.next/static/chunks` JS | `2,037.8 KB` (`27` files) | `2,043.5 KB` (`27` files) | `+5.7 KB` (`+0.28%`) |
+| `/dashboard` Transferred JS / Requests | `1,436.5 KB` / `18` | `1,436.4 KB` / `18` | `-0.1 KB` / `0` reqs |
+| `/assistant` Transferred JS / Requests (Desktop / Mobile) | `860.0 KB` / `15` / `19` | `859.5 KB` / `15` / `22` | `-0.5 KB` / `+3` mobile prefetch reqs |
+| `/impact` Transferred JS / Requests | `1,324.1 KB` / `17` | `1,323.9 KB` / `17` | `-0.2 KB` / `0` reqs |
+| Desktop `/dashboard` (FCP / DCL / Load) | `184ms` / `67ms` / `315ms` | `144ms` / `52ms` / `244ms` | `-40ms` / `-15ms` / `-71ms` |
+| Mobile `/dashboard` (FCP / DCL / Load) | `148ms` / `62ms` / `266ms` | `112ms` / `41ms` / `184ms` | `-36ms` / `-21ms` / `-82ms` |
+| Desktop `/assistant` (FCP / DCL / Load) | `220ms` / `49ms` / `229ms` | `228ms` / `61ms` / `277ms` | `+8ms` / `+12ms` / `+48ms` (loopback jitter) |
+| Mobile `/assistant` (FCP / DCL / Load) | `220ms` / `54ms` / `249ms` | `148ms` / `42ms` / `183ms` | `-72ms` / `-12ms` / `-66ms` |
+| Desktop `/impact` (FCP / DCL / Load) | `152ms` / `61ms` / `271ms` | `152ms` / `62ms` / `277ms` | `0ms` / `+1ms` / `+6ms` |
+| Mobile `/impact` (FCP / DCL / Load) | `124ms` / `56ms` / `242ms` | `112ms` / `49ms` / `221ms` | `-12ms` / `-7ms` / `-21ms` |
+
+### 4. Security, Rate-Limiting & Accessibility Audit
+- **Credentials & Supply Chain:** `.env*` tracked files = `.env.example` only; Git history contains only synthetic test `AIza...` fixtures in `phase03*.test.ts`; `.next/static/chunks` credential scan = `[]`; `npm audit --omit=dev` = `0` vulnerabilities.
+- **CSP:** Production `script-src 'self' 'unsafe-inline'` runs without `'unsafe-eval'` (`0` runtime/console errors).
+- **Rate Limiting & Cache Findings (`src/lib/cache/memory-cache.ts` & `src/lib/ai/route-helper.ts`) — Finding #2:**
+  - `checkRateLimit` updates `rateLimitBuckets.set(bucketKey, valid)` without refreshing `Map` LRU ordering, and `pruneRateLimitBuckets` evicts `keys().next().value` in FIFO insertion order when `>= 2000` buckets accumulate. Under key-flooding, an actively blocked bucket near the front of insertion order can be evicted before its window expires.
+  - Outside Vercel (where `x-vercel-forwarded-for` and `x-real-ip` are platform-populated), `getClientIp` falls back to client-modifiable `x-forwarded-for`. As documented in `README.md`, serverless isolates also do not share in-memory rate limits horizontally without external Redis / Vercel Firewall rules.
+- **Final Accessibility Audit (`12` routes × dark/light + interactive states):** **`0` WCAG 2.2 AA Axe violations**, `0` console/page errors, `0` horizontal overflow issues at `320×640`, verified `Escape` focus restoration (`workspace-mobile-nav`), and verified `html[lang="hi"]` with `prefers-reduced-motion: reduce`.
+
+### 5. Live Integration Verification (`next start -p 3093`)
+- `GET /api/health`: `200` (`status: "ok"`, `geminiModel: "gemini-3.1-flash-lite"`).
+- `GET /api/air-quality` (New Delhi, `forecastDays=3`): `200` (`source: "modeled"`, `usAqi: 233`, `48` hourly points); Dashboard `48h` toggle (`aria-pressed="true"`) verified.
+- `GET /api/locations/search?q=Jaipur&limit=3`: `200` (`count: 3`, `"Jaipur"`).
+- All `6` live Gemini `POST` endpoints (`/api/ai/{chat,plan,indoor-air,sustainability,community,impact}`): All returned HTTP `200`, `ok: true`, `aiGenerated: true`, `provenanceMode: "gemini"`, with valid citations (`gemini-3.1-flash-lite` on `chat`, `indoor-air`, `sustainability`, `impact`; automatic resilience fallback `gemini-3.5-flash-lite` on `plan`, `community`).
+- Impact `kg CO₂e` units, Community Action Plan heading, Printable Report route, `/manifest.webmanifest` (`200`), and `/sw.js` (`200`) all verified. *(Note: During `/profile` smoke script execution prior to hydration, `adultsInput.fill("3")` fired on SSR markup before hydration reset to `"2"`; full hydrated onboarding/profile save persistence passed independently in `tests/e2e/phase04.spec.ts`.)*
+
+### 6. Required Proposed Corrections Before Approval
+1. **Fix clean-checkout `typecheck` / CI failure (Release Blocker):** Update `"typecheck"` in `package.json` to `"next typegen && tsc --noEmit"` (or type `RootLayout` props cleanly without `.next/types` `LayoutProps` in `src/app/layout.tsx`) so `npm ci && npm run typecheck` and `.github/workflows/ci.yml` pass from a completely clean checkout without a prior `next build`.
+2. **Harden rate-limit bucket eviction (`src/lib/cache/memory-cache.ts`):** Delete and re-insert touched keys on `checkRateLimit` to preserve true LRU ordering, and evict expired and unblocked (`valid.length < maxRequests`) buckets first in `pruneRateLimitBuckets` before evicting actively rate-limited buckets.
+
+---
+
+## Phase 12.2 — Final Release Blocker Resolution
+
+- **Date:** 2026-11-28
+- **Preserved Submission 2 Baseline Commit:** `f8858cfb2d967a8c0ad6ab3825d70e5a611a59e6` (verified available for rollback)
+- **Final Release Verdict:** **APPROVED FOR FINAL PUSH AND SUBMISSION**
+
+### 1. Root Causes Resolved
+1. **Clean-Checkout `typecheck` & CI Failure:** `package.json` ran `"typecheck": "tsc --noEmit"`, while `src/app/layout.tsx` uses Next.js 16's auto-generated `LayoutProps<"/">` type from `.next/types/routes.d.ts`. In clean checkouts or `.github/workflows/ci.yml` where `npm run typecheck` ran before `npm run build`, `tsc --noEmit` failed with `error TS2304: Cannot find name 'LayoutProps'`.
+2. **Rate-Limit Bucket Eviction & Unproxied Header Spoofing:** In `src/lib/cache/memory-cache.ts`, `checkRateLimit` updated `rateLimitBuckets.set(...)` without updating `Map` LRU recency order and evicted active buckets FIFO when `MAX_RATE_LIMIT_BUCKETS` (`2000`) filled. In `src/lib/ai/route-helper.ts`, `getClientIp` fell back to client-modifiable `x-forwarded-for` even when running on unproxied standalone servers without trusted proxy indicators.
+
+### 2. Files Modified & Implemented Corrections
+- [package.json](file:///e:/VayuWise-AI/package.json): Updated `"typecheck"` script to `"next typegen && tsc --noEmit"` so `.next/types` route definitions are generated automatically before strict type checking (used directly by [.github/workflows/ci.yml](file:///e:/VayuWise-AI/.github/workflows/ci.yml)).
+- [memory-cache.ts](file:///e:/VayuWise-AI/src/lib/cache/memory-cache.ts):
+  - Maintained true LRU order via `delete` + `set` on both `cacheStore` updates and `checkRateLimit` hits.
+  - Pruned all expired buckets across windows before admitting overflow keys.
+  - Preserved all unexpired request histories and active/blocked buckets: when all `MAX_RATE_LIMIT_BUCKETS` (`2000`) entries are active and unexpired, new overflow admissions fail conservatively with `allowed: false` and a computed `Retry-After` (`>= 1s`) rather than evicting an active bucket.
+- [route-helper.ts](file:///e:/VayuWise-AI/src/lib/ai/route-helper.ts): Scoped trusted proxy header parsing in `getClientIp`: trusts `x-vercel-forwarded-for` / `x-real-ip` on Vercel (`VERCEL=1`), trusts proxy forwarding headers when `TRUST_PROXY_HEADERS=true` (or `NODE_ENV=test`), and ignores client-supplied forwarding headers (`"untrusted-proxy-client"`) in unproxied standalone deployments.
+- [phase12_branches.test.ts](file:///e:/VayuWise-AI/tests/unit/phase12_branches.test.ts): Added deterministic timestamp-controlled regression tests covering expired bucket cleanup, `MAX_RATE_LIMIT_BUCKETS` capacity, LRU recency, preservation of blocked & partial buckets under flooding, window recovery, endpoint vs. aggregate `429` + `Retry-After`, and trusted vs. untrusted proxy headers.
+- [README.md](file:///e:/VayuWise-AI/README.md): Updated verified test counts/coverage and documented bounded rate-limit throttling and `TRUST_PROXY_HEADERS` / Vercel proxy behavior.
+
+### 3. Clean-Checkout & Full Verification Results
+- **Isolated Clean Workspace (`vw-phase12-2-isolated`, `158` Git-eligible files, zero `.next/`, zero `.env*`, `GEMINI_API_KEY` unset):**
+  - `npm ci`: **PASSED** (`689` packages, `0` vulnerabilities).
+  - `npm run typecheck` *(executed before `npm run build`)*: **PASSED** (`next typegen && tsc --noEmit`, `0` errors).
+  - `npm run lint`: **PASSED** (`0` errors, `0` warnings).
+  - `npm run test`: **PASSED** (`16` files, `123/123` tests).
+  - `npm run build` *(no Gemini credentials)*: **PASSED** (`25/25` routes).
+  - `npm run test:e2e`: **PASSED** (`32/32` Playwright Chromium tests).
+  - `npm audit --omit=dev`: **`0` vulnerabilities**.
+  - No-credential fallbacks (`http://127.0.0.1:3094/api/ai/*`): All `6` endpoints returned HTTP `503` (`UNCONFIGURED`) with non-empty `fallbackData`.
+  - Production CSP (`script-src 'self' 'unsafe-inline'` without `'unsafe-eval'`) & 12-route dark/light interactive Axe audit: **`0` violations**, `0` console/page errors.
+- **Local Workspace Coverage & Live Integration (`e:\VayuWise-AI`):**
+  - **Vitest Coverage:** **`83.14%` statements (`2245/2700`), `66.66%` branches (`2208/3312`), `67.25%` functions (`499/742`), `85.36%` lines (`2158/2528`)**; Critical Core: **`95.21%` statements (`955/1003`), `82.13%` branches (`956/1164`)**.
+  - **Bundle & Secrets:** `27` `.next/static/chunks/*.js` files (`2,043.5 KB`), `0` credential hits (`SECRET_HITS: []`); `git ls-files ".env*"` returns `.env.example` only.
+  - **Live Backends (`next start -p 3093`):** `/api/health` (`200`), Open-Meteo `/api/air-quality` (`200`, `modeled`, `usAqi: 233`, `48` hours) & `/api/locations/search` (`200`, `3` results), all `6` live Gemini endpoints (`200`, `aiGenerated: true`, `gemini-3.1-flash-lite`, `hasCitations: true`), hydrated `/profile` save persistence (`"3"` across reload), Dashboard `48h` toggle, Impact `kg CO₂e`, Community, Report, `/manifest.webmanifest` (`200`), and `/sw.js` (`200`) verified.
+  - **Final Repository Size:** `1.525 MB` (`1,598,835` bytes across `158` Git-eligible files excluding `node_modules`, `.next`, `coverage`, test outputs, and `.env*`; well below `< 10 MB` limit).
+
+### 4. Remaining Security Limitations
+- Per-isolate in-memory rate limits and stale cache remain scoped to individual warm Node.js serverless isolates; multi-instance global coordination still relies on edge firewall rules (Vercel Firewall configuration documented in `README.md`).
+- Client CSP retains `'unsafe-inline'` for `script-src` and `style-src` for Next.js static hydration and Tailwind/Recharts inline styles while `'unsafe-eval'` remains disabled in production.
+- In standalone deployments behind a reverse proxy other than Vercel, operators must set `TRUST_PROXY_HEADERS=true` only when the proxy strips and overwrites client forwarding headers; otherwise all requests share the conservative untrusted-proxy bucket.

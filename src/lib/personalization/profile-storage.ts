@@ -40,6 +40,14 @@ export function normalizeLegacyCommuteMode(
   return mode;
 }
 
+function pickBoolean(val: unknown, fallback: boolean): boolean {
+  return typeof val === "boolean" ? val : fallback;
+}
+
+function pickOptString(val: unknown): string | undefined {
+  return typeof val === "string" ? val : undefined;
+}
+
 /**
  * Strips unknown/sensitive fields (names, exact street addresses, medical records)
  * and migrates Phase 01-03 v1 profiles to version 2 cleanly without losing saved data.
@@ -62,6 +70,10 @@ export function migratePersistedProfile(
   const record = raw as Record<string, unknown>;
   const rawVersion =
     typeof record.profileVersion === "number" ? record.profileVersion : 1;
+  const sensitivityEnabled =
+    typeof record.sensitivityOptIn === "boolean"
+      ? record.sensitivityOptIn && Boolean(record.hasRespiratorySensitivity)
+      : Boolean(record.hasRespiratorySensitivity);
 
   // Pick only validated non-sensitive allowlisted fields
   const sanitizedInput: Record<string, unknown> = {
@@ -70,27 +82,21 @@ export function migratePersistedProfile(
       typeof record.onboardingCompleted === "boolean"
         ? record.onboardingCompleted
         : undefined,
-    cityId: typeof record.cityId === "string" ? record.cityId : undefined,
+    cityId: pickOptString(record.cityId),
     selectedLocation: record.selectedLocation,
     householdAdults: record.householdAdults ?? fallbackProfile.householdAdults,
     childrenCount: record.childrenCount ?? fallbackProfile.childrenCount,
     seniorsCount: record.seniorsCount ?? fallbackProfile.seniorsCount,
-    sensitivityOptIn:
-      typeof record.sensitivityOptIn === "boolean"
-        ? record.sensitivityOptIn
-        : Boolean(record.hasRespiratorySensitivity),
-    hasRespiratorySensitivity:
-      typeof record.sensitivityOptIn === "boolean"
-        ? record.sensitivityOptIn && Boolean(record.hasRespiratorySensitivity)
-        : Boolean(record.hasRespiratorySensitivity),
+    sensitivityOptIn: pickBoolean(
+      record.sensitivityOptIn,
+      Boolean(record.hasRespiratorySensitivity)
+    ),
+    hasRespiratorySensitivity: sensitivityEnabled,
     lifestyleCategory:
       record.lifestyleCategory ?? fallbackProfile.lifestyleCategory,
     workScheduleMode:
       record.workScheduleMode ?? fallbackProfile.workScheduleMode ?? "onsite",
-    scheduleWindowSummary:
-      typeof record.scheduleWindowSummary === "string"
-        ? record.scheduleWindowSummary
-        : undefined,
+    scheduleWindowSummary: pickOptString(record.scheduleWindowSummary),
     outdoorPreference:
       record.outdoorPreference ?? fallbackProfile.outdoorPreference,
     primaryCommute:
@@ -108,14 +114,14 @@ export function migratePersistedProfile(
       record.workingWeeksPerYear ?? fallbackProfile.workingWeeksPerYear ?? 48,
     vehicleOccupancy:
       record.vehicleOccupancy ?? fallbackProfile.vehicleOccupancy ?? 1,
-    hasHepaPurifier:
-      typeof record.hasHepaPurifier === "boolean"
-        ? record.hasHepaPurifier
-        : fallbackProfile.hasHepaPurifier,
-    canCrossVentilate:
-      typeof record.canCrossVentilate === "boolean"
-        ? record.canCrossVentilate
-        : fallbackProfile.canCrossVentilate,
+    hasHepaPurifier: pickBoolean(
+      record.hasHepaPurifier,
+      fallbackProfile.hasHepaPurifier
+    ),
+    canCrossVentilate: pickBoolean(
+      record.canCrossVentilate,
+      fallbackProfile.canCrossVentilate
+    ),
     cookingPractice:
       record.cookingPractice ?? fallbackProfile.cookingPractice ?? "lpg_gas",
     budgetTier: record.budgetTier ?? fallbackProfile.budgetTier,

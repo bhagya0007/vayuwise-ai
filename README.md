@@ -89,11 +89,12 @@ flowchart LR
 
 ## Testing & Verification Commands
 
-- `npm run typecheck` — Strict TypeScript check (`tsc --noEmit`)
+- `npm run typecheck` — Strict TypeScript check (`next typegen && tsc --noEmit`, ensuring clean checkouts pass before `npm run build`)
 - `npm run lint` — ESLint check across app, components, API routes, and tests (`0` errors, `0` warnings)
-- `npm run test` — Run all Vitest unit, API route integration, Gemini/Open-Meteo service resilience, impact math, and AI safety tests (`104` tests across `14` files; `92.64%` statement and `75.09%` branch coverage on `src/app/api`, `src/config`, `src/lib`, `src/services`)
+- `npm run test` — Run all Vitest unit, API route integration, Gemini/Open-Meteo service resilience, impact math, AI safety, and UI component tests (`123` tests across `16` files; `83.14%` overall `src/**` statements and `95.21%` critical core statements / `82.13%` critical core branches)
 - `npm run test:e2e` — Run all Playwright Chromium E2E tests (`32` tests across `9` files, including `@axe-core/playwright` WCAG 2.2 AA & HTTP security header checks)
 - `npm audit --omit=dev` — Verify production dependencies (`0` vulnerabilities)
+- **CI Workflow:** `.github/workflows/ci.yml` executes clean `npm ci`, `typecheck`, `lint`, `npm run test`, and `npm run build` with `GEMINI_AI_ENABLED=false` (no private API keys required).
 
 ---
 
@@ -103,7 +104,8 @@ flowchart LR
 - **Google Gemini Free-Tier Disclosure:** Under Google's unpaid/free-tier Gemini API terms, prompts and outputs sent to the API may be logged or reviewed by Google to improve products/ML models. Users are explicitly cautioned not to enter medical records, personal identities, or confidential details.
 - **PWA Cache Privacy:** `public/sw.js` caches only immutable static `/_next/static/*` assets and `.svg` icons, strictly bypassing `/api/*` and browser preferences.
 - **Known Limitations:**
-  - In serverless multi-instance deployments (e.g., Vercel), the built-in per-route (`15` req/min) and aggregate (`23`–`30` req/min) sliding-window limiters operate per Node.js isolate rather than globally across concurrent instances.
+  - In serverless multi-instance deployments (e.g., Vercel), the built-in per-route (`15` req/min) and aggregate (`23`–`30` req/min) sliding-window limiters operate per Node.js isolate rather than globally across concurrent instances, and cap in-memory buckets (`MAX_RATE_LIMIT_BUCKETS = 2000`) by throttling new clients conservatively without evicting active/blocked buckets.
+  - Proxy client-IP headers (`x-vercel-forwarded-for`, `x-real-ip`) are trusted only on Vercel (`VERCEL=1`) or when `TRUST_PROXY_HEADERS=true`; in unproxied standalone Node environments, arbitrary client-supplied forwarding headers are ignored cleanly.
   - Regional CAMS/Open-Meteo forecasts do not measure household indoor air or hyperlocal street-level traffic spikes.
 
 ---

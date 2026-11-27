@@ -16,17 +16,12 @@ import {
   AiProvenanceBadge,
   ContextMetaStrip,
   WhyRecommendationToggle,
-  type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
 import { EmptyStateCard } from "@/components/common/Controls";
 import { useAppPreferences } from "@/components/providers/AppProviders";
-import {
-  postAiEndpoint,
-  toAiLocationPayload,
-  type AiModuleErrorState,
-} from "@/lib/ai/client";
-import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
+import { useAiModuleRequest } from "@/hooks/useAiModuleRequest";
+import { toAiLocationPayload } from "@/lib/ai/client";
 import type { AiDailyPlanResponse } from "@/lib/ai/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,63 +43,47 @@ export function PlannerView() {
     logActivity,
     addToast,
   } = useAppPreferences();
-  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(
-    null
-  );
   const [scheduleNote, setScheduleNote] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<AiDailyPlanResponse | null>(null);
-  const [aiGenerated, setAiGenerated] = useState(false);
-  const [provenanceMode, setProvenanceMode] = useState<
-    "gemini" | "gemini_safety_adjusted" | "rule_based_fallback" | undefined
-  >(undefined);
-  const [modelUsed, setModelUsed] = useState<string | undefined>(undefined);
-  const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
-  const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
   const [completedWindows, setCompletedWindows] = useState<string[]>([]);
-  const [errorState, setErrorState] =
-    useState<AiModuleErrorState<AiDailyPlanResponse> | null>(null);
+
+  const {
+    loading,
+    data: plan,
+    generatedFingerprint,
+    aiGenerated,
+    provenanceMode,
+    modelUsed,
+    citations,
+    contextMeta,
+    errorState,
+    execute,
+    applyFallback,
+  } = useAiModuleRequest<AiDailyPlanResponse>({
+    endpoint: "/api/ai/plan",
+    locationKey: selectedLocation.id,
+    fallbackErrorMessage: "Unable to generate AI daily plan.",
+    networkErrorMessage:
+      locale === "hi"
+        ? "दैनिक योजना बनाते समय नेटवर्क त्रुटि हुई।"
+        : "Network error while generating daily plan.",
+    successToastMessage:
+      locale === "hi"
+        ? "व्यक्तिगत दैनिक योजना तैयार है।"
+        : "Personalized daily plan generated.",
+    recommendationFingerprint,
+    addToast,
+  });
 
   const generatePlan = async () => {
-    setLoading(true);
-    setErrorState(null);
-    const result = await postAiEndpoint<AiDailyPlanResponse>({
-      endpoint: "/api/ai/plan",
-      body: {
+    await execute(
+      {
         locale,
         location: toAiLocationPayload(selectedLocation),
         profile,
         scheduleNote: scheduleNote.trim() || undefined,
       },
-      fallbackErrorMessage: "Unable to generate AI daily plan.",
-      networkErrorMessage:
-        locale === "hi"
-          ? "दैनिक योजना बनाते समय नेटवर्क त्रुटि हुई।"
-          : "Network error while generating daily plan.",
-    });
-
-    if (!result.ok || !result.payload) {
-      setErrorState(
-        result.error ?? { message: "Unable to generate AI daily plan." }
-      );
-      setLoading(false);
-      return;
-    }
-
-    setPlan(result.payload.data);
-    setGeneratedFingerprint(recommendationFingerprint);
-    setAiGenerated(result.payload.aiGenerated);
-    setProvenanceMode(result.payload.provenanceMode);
-    setModelUsed(result.payload.modelUsed);
-    setCitations(result.payload.citations);
-    setContextMeta(result.payload.contextMeta);
-    setCompletedWindows([]);
-    addToast(
-      locale === "hi"
-        ? "व्यक्तिगत दैनिक योजना तैयार है।"
-        : "Personalized daily plan generated."
+      () => setCompletedWindows([])
     );
-    setLoading(false);
   };
 
   const toggleSlot = (windowId: string, title?: string) => {
@@ -194,14 +173,7 @@ export function PlannerView() {
           errorCode={errorState.errorCode}
           onRetry={() => void generatePlan()}
           hasFallback={Boolean(errorState.fallback)}
-          onUseFallback={() => {
-            if (!errorState.fallback) return;
-            setPlan(errorState.fallback);
-            setAiGenerated(false);
-            setModelUsed(undefined);
-            setContextMeta(errorState.contextMeta ?? null);
-            setErrorState(null);
-          }}
+          onUseFallback={applyFallback}
         />
       ) : null}
 

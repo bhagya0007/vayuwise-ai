@@ -200,8 +200,8 @@ export function ExposureComparisonCard({
               <p
                 className={`mt-1 text-xl font-semibold tabular-nums ${
                   (result.differenceUgHrM3 ?? 0) > 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : "text-amber-600 dark:text-amber-400"
+                    ? "text-emerald-700 dark:text-emerald-400"
+                    : "text-amber-700 dark:text-amber-400"
                 }`}
               >
                 {(result.differenceUgHrM3 ?? 0) > 0

@@ -44,6 +44,40 @@ const PROFILE_LABELS: Record<
   },
 };
 
+function finiteOr(val: number | undefined, fallback: number): number {
+  return typeof val === "number" && Number.isFinite(val) ? val : fallback;
+}
+
+function buildAppliedPreferenceLabels(params: {
+  locale: Locale;
+  profileType: NonNullable<FamilyProfile["lifestyleCategory"]>;
+  totalMembers: number;
+  factorLabelEn: string;
+  factorLabelHi: string;
+  commuteKm: number;
+  budgetTier: BudgetTier;
+  hasHepaPurifier: boolean;
+}): string[] {
+  const { locale, profileType, totalMembers, commuteKm, budgetTier, hasHepaPurifier } =
+    params;
+  if (locale === "hi") {
+    return [
+      PROFILE_LABELS.hi[profileType],
+      `${totalMembers} सदस्य`,
+      `${params.factorLabelHi} (${commuteKm} किमी/दिन)`,
+      `बजट: ${budgetTier}`,
+      hasHepaPurifier ? "HEPA फ़िल्टर उपलब्ध" : "HEPA के बिना इनडोर सुरक्षा",
+    ];
+  }
+  return [
+    PROFILE_LABELS.en[profileType],
+    `${totalMembers} household member${totalMembers > 1 ? "s" : ""}`,
+    `${params.factorLabelEn} (${commuteKm} km/day)`,
+    `Budget: ${budgetTier.replace("_", " ")}`,
+    hasHepaPurifier ? "HEPA available" : "No HEPA purifier",
+  ];
+}
+
 export function buildNormalizedPersonalizationContext(params: {
   profile: FamilyProfile;
   location: GeoLocation;
@@ -53,29 +87,19 @@ export function buildNormalizedPersonalizationContext(params: {
   const { profile, location, forecast } = params;
   const locale = params.locale ?? profile.preferredLocale ?? "en";
 
-  const adults = Number.isFinite(profile.householdAdults) ? Math.max(1, profile.householdAdults) : 2;
-  const children = Number.isFinite(profile.childrenCount) ? Math.max(0, profile.childrenCount) : 0;
-  const seniors = Number.isFinite(profile.seniorsCount) ? Math.max(0, profile.seniorsCount) : 0;
+  const adults = Math.max(1, finiteOr(profile.householdAdults, 2));
+  const children = Math.max(0, finiteOr(profile.childrenCount, 0));
+  const seniors = Math.max(0, finiteOr(profile.seniorsCount, 0));
   const totalMembers = adults + children + seniors;
   const sensitivityEnabled =
-    profile.sensitivityOptIn === false ? false : Boolean(profile.hasRespiratorySensitivity);
-
-  const hasVulnerableMembers =
-    children > 0 || seniors > 0 || sensitivityEnabled;
+    profile.sensitivityOptIn !== false && Boolean(profile.hasRespiratorySensitivity);
+  const hasVulnerableMembers = children > 0 || seniors > 0 || sensitivityEnabled;
 
   const normalizedMode = normalizeLegacyCommuteMode(profile.primaryCommute);
-  const commuteKm = Number.isFinite(profile.dailyCommuteKm)
-    ? Math.max(0, profile.dailyCommuteKm)
-    : 14;
-  const daysPerWeek = Number.isFinite(profile.commuteDaysPerWeek)
-    ? (profile.commuteDaysPerWeek as number)
-    : 5;
-  const weeksPerYear = Number.isFinite(profile.workingWeeksPerYear)
-    ? (profile.workingWeeksPerYear as number)
-    : 48;
-  const occupancy = Number.isFinite(profile.vehicleOccupancy)
-    ? (profile.vehicleOccupancy as number)
-    : 1;
+  const commuteKm = Math.max(0, finiteOr(profile.dailyCommuteKm, 14));
+  const daysPerWeek = finiteOr(profile.commuteDaysPerWeek, 5);
+  const weeksPerYear = finiteOr(profile.workingWeeksPerYear, 48);
+  const occupancy = finiteOr(profile.vehicleOccupancy, 1);
 
   const baselineCalc = calculateTransportScenario({
     mode: normalizedMode,
@@ -89,35 +113,24 @@ export function buildNormalizedPersonalizationContext(params: {
   });
 
   const ambientUsAqi = forecast?.current.usAqi ?? null;
-  const healthPriority =
-    ambientUsAqi !== null
-      ? hasVulnerableMembers
-        ? ambientUsAqi >= 101
-        : ambientUsAqi >= 151
-      : false;
+  const aqiThreshold = hasVulnerableMembers ? 101 : 151;
+  const healthPriority = ambientUsAqi !== null && ambientUsAqi >= aqiThreshold;
   const outdoorBlocked = ambientUsAqi !== null && ambientUsAqi >= 151;
-
   const profileType = profile.lifestyleCategory ?? "family_household";
   const workScheduleMode = profile.workScheduleMode ?? "onsite";
   const cookingPractice = profile.cookingPractice ?? "lpg_gas";
   const factor = getEmissionFactorForMode(normalizedMode);
 
-  const appliedPreferenceLabels =
-    locale === "hi"
-      ? [
-          PROFILE_LABELS.hi[profileType],
-          `${totalMembers} सदस्य`,
-          `${factor.labelHi} (${commuteKm} किमी/दिन)`,
-          `बजट: ${profile.budgetTier}`,
-          profile.hasHepaPurifier ? "HEPA फ़िल्टर उपलब्ध" : "HEPA के बिना इनडोर सुरक्षा",
-        ]
-      : [
-          PROFILE_LABELS.en[profileType],
-          `${totalMembers} household member${totalMembers > 1 ? "s" : ""}`,
-          `${factor.labelEn} (${commuteKm} km/day)`,
-          `Budget: ${profile.budgetTier.replace("_", " ")}`,
-          profile.hasHepaPurifier ? "HEPA available" : "No HEPA purifier",
-        ];
+  const appliedPreferenceLabels = buildAppliedPreferenceLabels({
+    locale,
+    profileType,
+    totalMembers,
+    factorLabelEn: factor.labelEn,
+    factorLabelHi: factor.labelHi,
+    commuteKm,
+    budgetTier: profile.budgetTier,
+    hasHepaPurifier: profile.hasHepaPurifier,
+  });
 
   return {
     profileVersion: profile.profileVersion ?? CURRENT_PROFILE_VERSION,
@@ -200,6 +213,113 @@ export interface RankedActionResult<T extends PrioritizableActionCandidate> {
   disclaimer: string;
 }
 
+function scoreSingleCandidate<T extends PrioritizableActionCandidate>(
+  item: T,
+  ctx: NormalizedPersonalizationContext,
+  usAqi: number,
+  aqiBandLabel: string,
+  allowedCosts: readonly ("free" | "low_cost" | "investment")[],
+  locale: Locale
+): RankedActionResult<T> {
+  const isHi = locale === "hi";
+  const healthPriority = ctx.healthProtectionConsiderations.healthProtectionPriority;
+  let score = 40;
+  const reasons: string[] = [];
+  let healthOverrideApplied = false;
+  let suppressedByHealthPriority = false;
+
+  if (item.isOutdoorExertion && (healthPriority || usAqi >= 151)) {
+    score = -100;
+    healthOverrideApplied = true;
+    suppressedByHealthPriority = true;
+    reasons.push(
+      isHi
+        ? `स्वास्थ्य प्राथमिकता लागू: US AQI ${usAqi} (${aqiBandLabel}) में बाहरी श्रम टालें।`
+        : `Health priority override: outdoor exertion suppressed at US AQI ${usAqi} (${aqiBandLabel || "Elevated"}).`
+    );
+  } else if (
+    healthPriority &&
+    (item.category === "indoor_protection" ||
+      item.category === "respiratory_safety" ||
+      item.category === "remote_shift")
+  ) {
+    score += 40;
+    healthOverrideApplied = true;
+    reasons.push(
+      isHi
+        ? "उच्च प्रदूषण में इनडोर व श्वसन सुरक्षा को सर्वोच्च प्राथमिकता।"
+        : "Boosted for health protection during elevated AQI."
+    );
+  }
+
+  if (allowedCosts.includes(item.relativeCost)) {
+    score += item.relativeCost === "free" && ctx.budgetConstraints.tier === "free" ? 20 : 12;
+    reasons.push(
+      isHi
+        ? `आपके बजट स्तर (${ctx.budgetConstraints.tier}) के अनुकूल।`
+        : `Fits your ${ctx.budgetConstraints.tier.replace("_", " ")} budget.`
+    );
+  } else {
+    score -= 22;
+    reasons.push(
+      isHi
+        ? "आपके चयनित बजट से अधिक लागत।"
+        : "Exceeds your currently selected budget tier."
+    );
+  }
+
+  if (
+    ctx.householdContext.hasVulnerableMembers &&
+    (item.category === "indoor_protection" || item.category === "respiratory_safety")
+  ) {
+    score += 15;
+    reasons.push(
+      isHi
+        ? "बच्चों/वरिष्ठों या संवेदनशील परिवार के लिए उपयुक्त।"
+        : "Prioritized for household members sensitive to fine particulates."
+    );
+  }
+
+  if (
+    !ctx.indoorEnvironment.hasHepaPurifier &&
+    item.category === "indoor_protection" &&
+    item.relativeCost === "free"
+  ) {
+    score += 10;
+  }
+
+  const workMode = ctx.scheduleConstraints.workScheduleMode;
+  if (item.scheduleFit?.includes(workMode)) {
+    score += 12;
+    reasons.push(
+      isHi
+        ? `आपके शेड्यूल (${workMode}) से मेल खाता है।`
+        : `Matches your ${workMode.replace("_", " ")} schedule.`
+    );
+  }
+
+  const savedKg = item.estimatedAnnualCo2eSavedKg ?? 0;
+  if (!suppressedByHealthPriority && savedKg > 0) {
+    score += Math.min(20, Math.round(savedKg / 30));
+    reasons.push(
+      isHi
+        ? `अनुमानित उत्सर्जन बचत: ~${Math.round(savedKg)} kg CO₂e/वर्ष।`
+        : `Deterministic savings contribution: ~${Math.round(savedKg)} kg CO₂e/yr.`
+    );
+  }
+
+  return {
+    item,
+    score,
+    healthOverrideApplied,
+    suppressedByHealthPriority,
+    reasons,
+    disclaimer: isHi
+      ? "प्राथमिकता क्रम केवल वरीयता व स्वास्थ्य-सुरक्षा नियम स्कोर है — यह चिकित्सकीय जोखिम या AI सटीकता नहीं है।"
+      : "Priority ranking reflects transparent preference and protection rules only — not medical risk or AI accuracy.",
+  };
+}
+
 /**
  * Transparent deterministic rule-based prioritization heuristic.
  * Health protection strictly overrides CO2e optimization during unhealthy pollution.
@@ -211,117 +331,16 @@ export function prioritizeRecommendations<T extends PrioritizableActionCandidate
   locale: Locale = ctx.languagePreference
 ): RankedActionResult<T>[] {
   const usAqi = ctx.healthProtectionConsiderations.ambientUsAqi ?? 100;
-  const healthPriority = ctx.healthProtectionConsiderations.healthProtectionPriority;
   const band = classifyUsAqi(usAqi);
+  const aqiBandLabel =
+    (locale === "hi" ? band.band?.labelHi : band.band?.labelEn) ?? "";
   const allowedCosts = COST_COMPATIBILITY[ctx.budgetConstraints.tier];
 
-  const scored = candidates.map((item) => {
-    let score = 40;
-    const reasons: string[] = [];
-    let healthOverrideApplied = false;
-    let suppressedByHealthPriority = false;
-
-    // 1. Strict health override for outdoor exertion during elevated smog
-    if (item.isOutdoorExertion && (healthPriority || usAqi >= 151)) {
-      score = -100;
-      healthOverrideApplied = true;
-      suppressedByHealthPriority = true;
-      reasons.push(
-        locale === "hi"
-          ? `स्वास्थ्य प्राथमिकता लागू: US AQI ${usAqi} (${band.band?.labelHi ?? ""}) में बाहरी श्रम टालें।`
-          : `Health priority override: outdoor exertion suppressed at US AQI ${usAqi} (${band.band?.labelEn ?? "Elevated"}).`
-      );
-    } else if (
-      healthPriority &&
-      (item.category === "indoor_protection" ||
-        item.category === "respiratory_safety" ||
-        item.category === "remote_shift")
-    ) {
-      score += 40;
-      healthOverrideApplied = true;
-      reasons.push(
-        locale === "hi"
-          ? "उच्च प्रदूषण में इनडोर व श्वसन सुरक्षा को सर्वोच्च प्राथमिकता।"
-          : "Boosted for health protection during elevated AQI."
-      );
-    }
-
-    // 2. Budget fit
-    if (allowedCosts.includes(item.relativeCost)) {
-      score += item.relativeCost === "free" && ctx.budgetConstraints.tier === "free" ? 20 : 12;
-      reasons.push(
-        locale === "hi"
-          ? `आपके बजट स्तर (${ctx.budgetConstraints.tier}) के अनुकूल।`
-          : `Fits your ${ctx.budgetConstraints.tier.replace("_", " ")} budget.`
-      );
-    } else {
-      score -= 22;
-      reasons.push(
-        locale === "hi"
-          ? "आपके चयनित बजट से अधिक लागत।"
-          : "Exceeds your currently selected budget tier."
-      );
-    }
-
-    // 3. Household vulnerability & indoor setup alignment
-    if (
-      ctx.householdContext.hasVulnerableMembers &&
-      (item.category === "indoor_protection" || item.category === "respiratory_safety")
-    ) {
-      score += 15;
-      reasons.push(
-        locale === "hi"
-          ? "बच्चों/वरिष्ठों या संवेदनशील परिवार के लिए उपयुक्त।"
-          : "Prioritized for household members sensitive to fine particulates."
-      );
-    }
-
-    if (
-      !ctx.indoorEnvironment.hasHepaPurifier &&
-      item.category === "indoor_protection" &&
-      item.relativeCost === "free"
-    ) {
-      score += 10;
-    }
-
-    // 4. Schedule feasibility
-    if (
-      item.scheduleFit &&
-      item.scheduleFit.includes(ctx.scheduleConstraints.workScheduleMode)
-    ) {
-      score += 12;
-      reasons.push(
-        locale === "hi"
-          ? `आपके शेड्यूल (${ctx.scheduleConstraints.workScheduleMode}) से मेल खाता है।`
-          : `Matches your ${ctx.scheduleConstraints.workScheduleMode.replace("_", " ")} schedule.`
-      );
-    }
-
-    // 5. Quantified environmental benefit (only when not suppressed by health safety)
-    if (!suppressedByHealthPriority && (item.estimatedAnnualCo2eSavedKg ?? 0) > 0) {
-      const bonus = Math.min(20, Math.round((item.estimatedAnnualCo2eSavedKg ?? 0) / 30));
-      score += bonus;
-      reasons.push(
-        locale === "hi"
-          ? `अनुमानित उत्सर्जन बचत: ~${Math.round(item.estimatedAnnualCo2eSavedKg ?? 0)} kg CO₂e/वर्ष।`
-          : `Deterministic savings contribution: ~${Math.round(item.estimatedAnnualCo2eSavedKg ?? 0)} kg CO₂e/yr.`
-      );
-    }
-
-    return {
-      item,
-      score,
-      healthOverrideApplied,
-      suppressedByHealthPriority,
-      reasons,
-      disclaimer:
-        locale === "hi"
-          ? "प्राथमिकता क्रम केवल वरीयता व स्वास्थ्य-सुरक्षा नियम स्कोर है — यह चिकित्सकीय जोखिम या AI सटीकता नहीं है।"
-          : "Priority ranking reflects transparent preference and protection rules only — not medical risk or AI accuracy.",
-    };
-  });
-
-  return scored.sort((a, b) => b.score - a.score);
+  return candidates
+    .map((item) =>
+      scoreSingleCandidate(item, ctx, usAqi, aqiBandLabel, allowedCosts, locale)
+    )
+    .sort((a, b) => b.score - a.score);
 }
 
 /**

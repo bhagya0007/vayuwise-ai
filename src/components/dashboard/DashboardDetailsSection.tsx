@@ -55,7 +55,7 @@ export function DashboardDetailsSection({
             {activitySummary.totalRecords > 0 ? (
               <Badge
                 variant="outline"
-                className="border-emerald-500/35 bg-emerald-500/10 text-xs text-emerald-700 dark:text-emerald-300"
+                className="border-emerald-500/35 bg-emerald-500/10 text-xs text-emerald-900 dark:text-emerald-300"
               >
                 {activitySummary.totalRecords}{" "}
                 {locale === "hi" ? "पूर्ण कार्य" : "actions logged"} ·{" "}

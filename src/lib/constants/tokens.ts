@@ -35,7 +35,7 @@ export const US_AQI_BANDS: readonly AqiBandToken[] = [
     descriptionHi:
       "वायु गुणवत्ता संतोषजनक है और सामान्य रूप से जोखिम बहुत कम है।",
     badgeClass:
-      "bg-emerald-500/15 text-emerald-700 border-emerald-500/35 dark:text-emerald-300",
+      "bg-emerald-500/15 text-emerald-900 border-emerald-500/35 dark:text-emerald-300",
     cssVar: "var(--aqi-good)",
     prioritizeHealthProtection: false,
   },

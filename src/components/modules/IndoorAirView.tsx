@@ -15,17 +15,12 @@ import {
   AiPrivacyAccordion,
   AiProvenanceBadge,
   WhyRecommendationToggle,
-  type AiContextMeta,
 } from "@/components/ai/AiTransparencyWidgets";
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
 import { EmptyStateCard } from "@/components/common/Controls";
 import { useAppPreferences } from "@/components/providers/AppProviders";
-import {
-  postAiEndpoint,
-  toAiLocationPayload,
-  type AiModuleErrorState,
-} from "@/lib/ai/client";
-import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
+import { useAiModuleRequest } from "@/hooks/useAiModuleRequest";
+import { toAiLocationPayload } from "@/lib/ai/client";
 import type { AiIndoorAirResponse } from "@/lib/ai/schemas";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,9 +60,6 @@ export function IndoorAirView() {
     addToast,
   } = useAppPreferences();
 
-  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(
-    null
-  );
   const [roomFocus, setRoomFocus] = useState<
     "whole_home" | "living_room" | "bedroom" | "kitchen" | "study_work"
   >("whole_home");
@@ -76,17 +68,31 @@ export function IndoorAirView() {
   >(profile.cookingPractice ?? "lpg_gas");
   const [budgetTier, setBudgetTier] = useState<BudgetTier>(profile.budgetTier);
   const [completedChecklist, setCompletedChecklist] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<AiIndoorAirResponse | null>(null);
-  const [aiGenerated, setAiGenerated] = useState(false);
-  const [provenanceMode, setProvenanceMode] = useState<
-    "gemini" | "gemini_safety_adjusted" | "rule_based_fallback" | undefined
-  >(undefined);
-  const [modelUsed, setModelUsed] = useState<string | undefined>(undefined);
-  const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
-  const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
-  const [errorState, setErrorState] =
-    useState<AiModuleErrorState<AiIndoorAirResponse> | null>(null);
+
+  const {
+    loading,
+    data,
+    generatedFingerprint,
+    aiGenerated,
+    provenanceMode,
+    modelUsed,
+    citations,
+    contextMeta,
+    errorState,
+    execute,
+    applyFallback,
+  } = useAiModuleRequest<AiIndoorAirResponse>({
+    endpoint: "/api/ai/indoor-air",
+    locationKey: selectedLocation.id,
+    fallbackErrorMessage: "Unable to reach Indoor Air Coach.",
+    networkErrorMessage: "Network error while contacting Indoor Air Coach.",
+    successToastMessage:
+      locale === "hi"
+        ? "इनडोर वायु मार्गदर्शन तैयार हुआ।"
+        : "Indoor air guidance generated.",
+    recommendationFingerprint,
+    addToast,
+  });
 
   const toggleChecklist = (item: { id: string; text: string }) => {
     const done = completedChecklist.includes(item.id);
@@ -110,44 +116,15 @@ export function IndoorAirView() {
   };
 
   const generateCoach = async () => {
-    setLoading(true);
-    setErrorState(null);
-    const result = await postAiEndpoint<AiIndoorAirResponse>({
-      endpoint: "/api/ai/indoor-air",
-      body: {
-        locale,
-        location: toAiLocationPayload(selectedLocation),
-        profile,
-        roomFocus,
-        cookingStyle,
-        budgetTier,
-        hasPurifier: profile.hasHepaPurifier,
-      },
-      fallbackErrorMessage: "Unable to reach Indoor Air Coach.",
-      networkErrorMessage: "Network error while contacting Indoor Air Coach.",
+    await execute({
+      locale,
+      location: toAiLocationPayload(selectedLocation),
+      profile,
+      roomFocus,
+      cookingStyle,
+      budgetTier,
+      hasPurifier: profile.hasHepaPurifier,
     });
-
-    if (!result.ok || !result.payload) {
-      setErrorState(
-        result.error ?? { message: "Unable to reach Indoor Air Coach." }
-      );
-      setLoading(false);
-      return;
-    }
-
-    setData(result.payload.data);
-    setGeneratedFingerprint(recommendationFingerprint);
-    setAiGenerated(result.payload.aiGenerated);
-    setProvenanceMode(result.payload.provenanceMode);
-    setModelUsed(result.payload.modelUsed);
-    setCitations(result.payload.citations);
-    setContextMeta(result.payload.contextMeta);
-    addToast(
-      locale === "hi"
-        ? "इनडोर वायु मार्गदर्शन तैयार हुआ।"
-        : "Indoor air guidance generated."
-    );
-    setLoading(false);
   };
 
   const checklistItems = CHECKLIST_TEMPLATES[locale];
@@ -322,14 +299,7 @@ export function IndoorAirView() {
           errorCode={errorState.errorCode}
           onRetry={() => void generateCoach()}
           hasFallback={Boolean(errorState.fallback)}
-          onUseFallback={() => {
-            if (!errorState.fallback) return;
-            setData(errorState.fallback);
-            setAiGenerated(false);
-            setModelUsed(undefined);
-            setContextMeta(errorState.contextMeta ?? null);
-            setErrorState(null);
-          }}
+          onUseFallback={applyFallback}
         />
       ) : null}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -74,6 +74,19 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
   const { dict, locale, selectedLocation } = useAppPreferences();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+        requestAnimationFrame(() => menuBtnRef.current?.focus());
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen]);
 
   const renderLinks = (isCollapsed: boolean, onNavigate?: () => void) => (
     <nav aria-label="Application navigation" className="flex flex-col gap-5">
@@ -215,12 +228,14 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           <div className="flex h-16 items-center justify-between gap-2 px-4 sm:px-6">
             <div className="flex min-w-0 items-center gap-2.5">
               <Button
+                ref={menuBtnRef}
                 type="button"
                 variant="outline"
                 size="icon-sm"
                 className="lg:hidden"
                 onClick={() => setMobileMenuOpen((prev) => !prev)}
                 aria-expanded={mobileMenuOpen}
+                aria-controls="workspace-mobile-nav"
                 aria-label={dict.common.menuLabel}
               >
                 {mobileMenuOpen ? (
@@ -262,7 +277,10 @@ export function WorkspaceShell({ children }: { children: ReactNode }) {
           </div>
 
           {mobileMenuOpen ? (
-            <div className="border-t border-border bg-sidebar px-4 py-4 lg:hidden">
+            <div
+              id="workspace-mobile-nav"
+              className="border-t border-border bg-sidebar px-4 py-4 lg:hidden"
+            >
               {renderLinks(false, () => setMobileMenuOpen(false))}
               <Link
                 href="/"

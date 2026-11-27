@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 import { ActivityTrackerCard } from "@/components/modules/impact/ActivityTrackerCard";
 import { ExposureComparisonCard } from "@/components/modules/impact/ExposureComparisonCard";
 import {
@@ -10,22 +10,17 @@ import {
   type ImpactAiExplainState,
 } from "@/components/modules/impact/ImpactAiExplanationCard";
 import {
+  ImpactPresetBar,
+  ImpactWhatIfCard,
+  type ImpactPresetPatch,
+} from "@/components/modules/impact/ImpactCalculatorControls";
+import {
   ImpactComparisonChartCard,
   type ImpactHorizon,
 } from "@/components/modules/impact/ImpactComparisonChartCard";
 import { ImpactMethodologyCard } from "@/components/modules/impact/ImpactMethodologyCard";
 import { useAppPreferences } from "@/components/providers/AppProviders";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAirQualityForecast } from "@/hooks/useAirQualityForecast";
 import { useSyncedImpactInputs } from "@/hooks/useSyncedImpactInputs";
 import {
@@ -36,11 +31,6 @@ import {
 import type { AiImpactExplainResponse } from "@/lib/ai/schemas";
 import { getEmissionFactorForMode } from "@/lib/impact/emission-factors";
 import { compareTransportScenarios } from "@/lib/impact/transport-calculator";
-import {
-  COMMUTE_MODES,
-  SELECT_CONTROL_CLASS,
-} from "@/lib/personalization/form-shared";
-import type { CommuteMode } from "@/types/domain";
 
 /**
  * Deterministic environmental impact lab comparing baseline vs. alternative travel
@@ -192,17 +182,10 @@ export function ImpactView() {
     );
   };
 
-  const applyPreset = (preset: {
-    base: Exclude<CommuteMode, "walk_cycle">;
-    alt: Exclude<CommuteMode, "walk_cycle">;
-    baseDays?: number;
-    altDays?: number;
-    baseOcc?: number;
-    altOcc?: number;
-  }) => {
+  const applyPreset = (preset: ImpactPresetPatch) => {
     updateValues({
-      baselineMode: preset.base,
-      altMode: preset.alt,
+      ...(preset.base !== undefined ? { baselineMode: preset.base } : {}),
+      ...(preset.alt !== undefined ? { altMode: preset.alt } : {}),
       ...(preset.baseDays !== undefined ? { baseDaysPerWeek: preset.baseDays } : {}),
       ...(preset.altDays !== undefined ? { altDaysPerWeek: preset.altDays } : {}),
       ...(preset.baseOcc !== undefined ? { baseOccupancy: preset.baseOcc } : {}),
@@ -280,7 +263,7 @@ export function ImpactView() {
                       ? dict.monthlyLabel
                       : dict.annualLabel}
               </p>
-              <p className="mt-2 text-[11px] text-amber-500/90">
+              <p className="mt-2 text-[11px] text-amber-800 dark:text-amber-300">
                 {dict.estimationNotice}
               </p>
             </div>
@@ -299,7 +282,7 @@ export function ImpactView() {
           role="tab"
           aria-selected={activeTab === "travel"}
           onClick={() => setActiveTab("travel")}
-          className={`rounded-lg px-3.5 py-1.5 font-medium transition-colors ${
+          className={`rounded-lg px-3.5 py-1.5 font-medium ${
             activeTab === "travel"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -312,7 +295,7 @@ export function ImpactView() {
           role="tab"
           aria-selected={activeTab === "exposure"}
           onClick={() => setActiveTab("exposure")}
-          className={`rounded-lg px-3.5 py-1.5 font-medium transition-colors ${
+          className={`rounded-lg px-3.5 py-1.5 font-medium ${
             activeTab === "exposure"
               ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground"
@@ -324,281 +307,30 @@ export function ImpactView() {
 
       {activeTab === "travel" ? (
         <>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-xs font-medium text-muted-foreground">
-              {dict.scenarioPresetsTitle}:
-            </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                applyPreset({
-                  base: "car_petrol",
-                  alt: "metro_rail",
-                  baseDays: 5,
-                  altDays: 5,
-                  baseOcc: 1,
-                })
-              }
-            >
-              {locale === "hi" ? "पेट्रोल कार बनाम मेट्रो" : "Petrol Car vs Metro"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                applyPreset({
-                  base: "car_petrol",
-                  alt: "carpool",
-                  baseDays: 5,
-                  altDays: 5,
-                  baseOcc: 1,
-                  altOcc: 3,
-                })
-              }
-            >
-              {locale === "hi" ? "अकेले ड्राइव बनाम कारपूल (3)" : "Solo vs Carpool (3p)"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                applyPreset({
-                  base: baselineMode === "work_from_home" ? "car_petrol" : baselineMode,
-                  alt: "work_from_home",
-                  baseDays: 5,
-                  altDays: 5,
-                })
-              }
-            >
-              {locale === "hi" ? "ऑन-साइट बनाम रिमोट" : "On-site vs Remote"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                applyPreset({
-                  base: baselineMode,
-                  alt: baselineMode,
-                  baseDays: 5,
-                  altDays: 3,
-                })
-              }
-            >
-              {locale === "hi" ? "हाइब्रिड शेड्यूल (5 → 3 दिन)" : "Hybrid Schedule (5d → 3d)"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                applyPreset({
-                  base: "bus",
-                  alt: "car_petrol",
-                  baseDays: 5,
-                  altDays: 5,
-                  baseOcc: 1,
-                  altOcc: 1,
-                })
-              }
-            >
-              {locale === "hi" ? "बस → कार (नकारात्मक जांच)" : "Bus → Petrol Car (+Increase)"}
-            </Button>
-          </div>
+          <ImpactPresetBar
+            baselineMode={baselineMode}
+            locale={locale}
+            dict={dict}
+            onApplyPreset={applyPreset}
+          />
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            <Card className="lg:col-span-5 border-border/80">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Scale className="size-4 text-primary" aria-hidden="true" />
-                  <span>{dict.whatIfTitle}</span>
-                </CardTitle>
-                <CardDescription>
-                  {locale === "hi"
-                    ? "दूरी, साधन और दिन बदलकर तुरंत उत्सर्जन अंतर देखें।"
-                    : "Adjust daily distance, travel modes, and days per week."}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="impact-distance">{dict.distanceLabel}</Label>
-                    <span className="text-xs font-semibold tabular-nums text-primary">
-                      {distanceKm} km
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    aria-label={dict.distanceLabel}
-                    min={0}
-                    max={120}
-                    step={0.5}
-                    value={Math.min(120, distanceKm)}
-                    onChange={(e) => updateValues({ distanceKm: Number(e.target.value) })}
-                    className="w-full accent-emerald-500"
-                  />
-                  <Input
-                    id="impact-distance"
-                    type="number"
-                    min={0}
-                    max={500}
-                    step={0.5}
-                    value={distanceKm}
-                    onChange={(e) =>
-                      updateValues({ distanceKm: Math.max(0, Number(e.target.value)) })
-                    }
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="impact-baseline">{dict.baselineModeLabel}</Label>
-                    <select
-                      id="impact-baseline"
-                      value={baselineMode}
-                      onChange={(e) =>
-                        updateValues({
-                          baselineMode: e.target.value as Exclude<CommuteMode, "walk_cycle">,
-                        })
-                      }
-                      className={SELECT_CONTROL_CLASS}
-                    >
-                      {COMMUTE_MODES.map((m) => (
-                        <option key={m} value={m}>
-                          {phase04Dict.commuteModes[m]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="impact-alt">{dict.altModeLabel}</Label>
-                    <select
-                      id="impact-alt"
-                      value={altMode}
-                      onChange={(e) =>
-                        updateValues({
-                          altMode: e.target.value as Exclude<CommuteMode, "walk_cycle">,
-                        })
-                      }
-                      className={SELECT_CONTROL_CLASS}
-                    >
-                      {COMMUTE_MODES.map((m) => (
-                        <option key={m} value={m}>
-                          {phase04Dict.commuteModes[m]}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="impact-base-days" className="text-xs">
-                    {dict.daysLabel}
-                  </Label>
-                  <Input
-                    id="impact-base-days"
-                    type="number"
-                    min={0}
-                    max={7}
-                    value={baseDaysPerWeek}
-                    onChange={(e) => {
-                      const next = Math.min(7, Math.max(0, Number(e.target.value)));
-                      updateValues({ baseDaysPerWeek: next, altDaysPerWeek: next });
-                    }}
-                  />
-                </div>
-
-                <details className="rounded-xl border border-border/80 bg-muted/20 p-3 text-xs">
-                  <summary className="cursor-pointer select-none font-medium text-foreground">
-                    {locale === "hi" ? "उन्नत सेटिंग्स" : "Advanced Settings"}
-                  </summary>
-                  <div className="mt-3 space-y-3">
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div className="space-y-1">
-                        <Label htmlFor="impact-alt-days" className="text-xs">
-                          {locale === "hi" ? "वैकल्पिक दिन/सप्ताह" : "Alternative days/wk"}
-                        </Label>
-                        <Input
-                          id="impact-alt-days"
-                          type="number"
-                          min={0}
-                          max={7}
-                          value={altDaysPerWeek}
-                          onChange={(e) =>
-                            updateValues({
-                              altDaysPerWeek: Math.min(7, Math.max(0, Number(e.target.value))),
-                            })
-                          }
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="impact-weeks" className="text-xs">
-                          {dict.weeksLabel}
-                        </Label>
-                        <Input
-                          id="impact-weeks"
-                          type="number"
-                          min={1}
-                          max={52}
-                          value={workingWeeks}
-                          onChange={(e) =>
-                            updateValues({
-                              workingWeeks: Math.min(52, Math.max(1, Number(e.target.value))),
-                            })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                      {baseFactor.basis === "vehicle_km" ? (
-                        <div className="space-y-1">
-                          <Label htmlFor="impact-base-occ" className="text-[11px] text-muted-foreground">
-                            {locale === "hi" ? "वर्तमान" : "Current"} {dict.occupancyLabel} (
-                            {baseFactor.minOccupancy}–{baseFactor.maxOccupancy})
-                          </Label>
-                          <Input
-                            id="impact-base-occ"
-                            type="number"
-                            min={baseFactor.minOccupancy}
-                            max={baseFactor.maxOccupancy}
-                            value={clampedBaseOcc}
-                            onChange={(e) =>
-                              updateValues({ baseOccupancy: Number(e.target.value) || 1 })
-                            }
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      ) : null}
-
-                      {altFactor.basis === "vehicle_km" ? (
-                        <div className="space-y-1">
-                          <Label htmlFor="impact-alt-occ" className="text-[11px] text-muted-foreground">
-                            {locale === "hi" ? "वैकल्पिक" : "Alt"} {dict.occupancyLabel} (
-                            {altFactor.minOccupancy}–{altFactor.maxOccupancy})
-                          </Label>
-                          <Input
-                            id="impact-alt-occ"
-                            type="number"
-                            min={altFactor.minOccupancy}
-                            max={altFactor.maxOccupancy}
-                            value={clampedAltOcc}
-                            onChange={(e) => setAltOccupancy(Number(e.target.value) || 1)}
-                            className="h-8 text-xs"
-                          />
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                </details>
-              </CardContent>
-            </Card>
+            <ImpactWhatIfCard
+              distanceKm={distanceKm}
+              baselineMode={baselineMode}
+              altMode={altMode}
+              baseDaysPerWeek={baseDaysPerWeek}
+              altDaysPerWeek={altDaysPerWeek}
+              workingWeeks={workingWeeks}
+              clampedBaseOcc={clampedBaseOcc}
+              clampedAltOcc={clampedAltOcc}
+              baseFactor={baseFactor}
+              altFactor={altFactor}
+              locale={locale}
+              phase04Dict={phase04Dict}
+              onUpdateValues={updateValues}
+              onSetAltOccupancy={setAltOccupancy}
+            />
 
             <ImpactComparisonChartCard
               comp={comp}

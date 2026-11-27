@@ -1,7 +1,6 @@
 import { z } from "zod";
 import {
   checkBoundaryCompatibility,
-  EMISSION_FACTOR_REGISTRY,
   EMISSION_FACTOR_REGISTRY_VERSION,
   getEmissionFactorForMode,
 } from "@/lib/impact/emission-factors";
@@ -232,8 +231,4 @@ export function compareTransportScenarios(params: {
     assumptions,
     limitations,
   };
-}
-
-export function listSupportedCommuteModes() {
-  return Object.values(EMISSION_FACTOR_REGISTRY);
 }

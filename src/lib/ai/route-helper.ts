@@ -9,6 +9,7 @@ import { getServerEnv } from "@/config/env";
 import { checkRateLimit } from "@/lib/cache/memory-cache";
 import { DEFAULT_FAMILY_PROFILE } from "@/lib/personalization/profile-storage";
 import { openMeteoAirQualityService } from "@/services/air-quality/open-meteo";
+import type { GeminiExecutionResult } from "@/services/gemini/gemini-service";
 import type {
   AirQualityForecast,
   FamilyProfile,
@@ -18,12 +19,44 @@ import type {
 
 const MAX_BODY_BYTES = 32_768; // 32 KB request size cap
 
+/**
+ * Extracts a client IP address while resisting spoofing in standalone Node
+ * deployments.
+ *
+ * - On Vercel (`VERCEL=1`), trusts platform-managed `x-vercel-forwarded-for`
+ *   then `x-real-ip`, ignoring client-appendable `x-forwarded-for`.
+ * - Behind an explicit reverse proxy (`TRUST_PROXY_HEADERS=true`) or during
+ *   unit tests (`NODE_ENV=test`), accepts forwarded proxy headers in strict
+ *   trust precedence.
+ * - In unproxied/unsupported deployments, ignores client-supplied forwarding
+ *   headers and collapses requests into a shared conservative bucket.
+ */
 export function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for");
-  if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "unknown";
+  const isVercel = process.env.VERCEL === "1";
+  const trustProxy = process.env.TRUST_PROXY_HEADERS === "true";
+  const isTest = process.env.NODE_ENV === "test";
+
+  if (!isVercel && !trustProxy && !isTest) {
+    return "untrusted-proxy-client";
   }
-  return req.headers.get("x-real-ip") ?? "local";
+
+  const vercelIp = req.headers
+    .get("x-vercel-forwarded-for")
+    ?.split(",")[0]
+    ?.trim();
+  if (vercelIp) return vercelIp;
+
+  const realIp = req.headers.get("x-real-ip")?.trim();
+  if (realIp) return realIp;
+
+  if (trustProxy || isTest) {
+    const forwarded = req.headers.get("x-forwarded-for");
+    if (forwarded) {
+      return forwarded.split(",")[0]?.trim() || "unknown";
+    }
+  }
+
+  return isVercel ? "vercel-client" : "local";
 }
 
 export function isAllowedOrigin(req: NextRequest): boolean {
@@ -296,4 +329,68 @@ export function formatAiRouteError<TFallback>(params: {
     },
     { status, headers: { "Cache-Control": "no-store" } }
   );
+}
+
+/**
+ * Shared POST lifecycle handler for `/api/ai/*` routes: enforces origin checks,
+ * rate limits, 32 KB body cap, schema validation, server-side AQI resolution,
+ * and normalized Gemini success/fallback formatting.
+ */
+export async function handleAiPostRequest<
+  TReq extends { locale: Locale; location: GeoLocation; profile?: FamilyProfile },
+  TRes extends { sourceIds?: string[] },
+>(params: {
+  request: NextRequest;
+  schema: z.ZodType<TReq>;
+  rateBucketPrefix: string;
+  defaultErrorMessage: string;
+  execute: (args: {
+    data: TReq;
+    context: GeminiAirQualityContext;
+    signal: AbortSignal;
+  }) => Promise<{
+    result: GeminiExecutionResult<TRes>;
+    fallbackData: TRes;
+    extraError?: Record<string, unknown>;
+  }>;
+}): Promise<Response> {
+  const parsed = await parseAndValidateAiRequest(
+    params.request,
+    params.schema,
+    params.rateBucketPrefix
+  );
+  if (!parsed.ok) return parsed.response;
+
+  const { context } = await resolveServerAiContext({
+    location: parsed.data.location,
+    profile: parsed.data.profile,
+    locale: parsed.data.locale,
+    signal: params.request.signal,
+  });
+
+  const { result, fallbackData, extraError } = await params.execute({
+    data: parsed.data,
+    context,
+    signal: params.request.signal,
+  });
+
+  if (result.ok && result.data) {
+    return formatAiRouteSuccess({
+      data: result.data,
+      aiGenerated: true,
+      modelUsed: result.modelUsed,
+      usage: result.usage,
+      latencyMs: result.latencyMs,
+      safety: result.safety,
+      context,
+    });
+  }
+
+  return formatAiRouteError({
+    errorCode: result.errorCode,
+    message: result.message ?? params.defaultErrorMessage,
+    fallbackData,
+    context,
+    extra: extraError,
+  });
 }

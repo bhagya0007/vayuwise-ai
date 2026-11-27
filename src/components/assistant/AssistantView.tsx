@@ -122,6 +122,12 @@ export function AssistantView() {
   });
   const liveUsAqi = activeForecast?.current.usAqi ?? null;
 
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, [selectedLocation.id]);
+
   const nextId = (prefix: string) => {
     seqRef.current += 1;
     return `${prefix}-${seqRef.current}`;
@@ -190,20 +196,21 @@ export function AssistantView() {
       return;
     }
 
+    const { payload } = res;
     setGeneratedFingerprint(recommendationFingerprint);
     setMessages((prev) => [
       ...prev,
       {
         id: nextId("a"),
         role: "assistant",
-        text: res.payload!.data.reply,
+        text: payload.data.reply,
         promptUsed: trimmed,
-        aiGenerated: res.payload!.aiGenerated,
-        provenanceMode: res.payload!.provenanceMode,
-        modelUsed: res.payload!.modelUsed,
-        structured: res.payload!.data,
-        citations: res.payload!.citations,
-        contextMeta: res.payload!.contextMeta ?? undefined,
+        aiGenerated: payload.aiGenerated,
+        provenanceMode: payload.provenanceMode,
+        modelUsed: payload.modelUsed,
+        structured: payload.data,
+        citations: payload.citations,
+        contextMeta: payload.contextMeta ?? undefined,
       },
     ]);
   };

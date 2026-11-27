@@ -1,50 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import {
-  Check,
-  CheckSquare,
-  Copy,
-  FileText,
-  Printer,
-  RefreshCw,
-  Share2,
-  ShieldCheck,
-  Square,
-  Users,
-} from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   AiDisclosureNote,
   AiErrorRecoveryCard,
-  AiProvenanceBadge,
-  ContextMetaStrip,
-  WhyRecommendationToggle,
-  type AiContextMeta,
+  AiPrivacyAccordion,
 } from "@/components/ai/AiTransparencyWidgets";
 import { PersonalizationStatusStrip } from "@/components/ai/PersonalizationStatusStrip";
 import { EmptyStateCard } from "@/components/common/Controls";
+import { CommunityActionPlanResults } from "@/components/modules/CommunityActionPlanResults";
 import { useAppPreferences } from "@/components/providers/AppProviders";
-import {
-  postAiEndpoint,
-  toAiLocationPayload,
-  type AiModuleErrorState,
-} from "@/lib/ai/client";
-import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
+import { useAiModuleRequest } from "@/hooks/useAiModuleRequest";
+import { toAiLocationPayload } from "@/lib/ai/client";
 import type { AiCommunityPlanResponse } from "@/lib/ai/schemas";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import type { BudgetTier } from "@/types/domain";
 
 export function CommunityView() {
@@ -56,9 +35,6 @@ export function CommunityView() {
     addToast,
   } = useAppPreferences();
 
-  const [generatedFingerprint, setGeneratedFingerprint] = useState<string | null>(
-    null
-  );
   const [communityType, setCommunityType] = useState<
     | "residential_society"
     | "school"
@@ -74,58 +50,43 @@ export function CommunityView() {
   const [availableResources, setAvailableResources] = useState("");
   const [completedChecklist, setCompletedChecklist] = useState<string[]>([]);
   const [copiedPlan, setCopiedPlan] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [plan, setPlan] = useState<AiCommunityPlanResponse | null>(null);
-  const [aiGenerated, setAiGenerated] = useState(false);
-  const [provenanceMode, setProvenanceMode] = useState<
-    "gemini" | "gemini_safety_adjusted" | "rule_based_fallback" | undefined
-  >(undefined);
-  const [modelUsed, setModelUsed] = useState<string | undefined>(undefined);
-  const [citations, setCitations] = useState<VerifiedKnowledgeSource[]>([]);
-  const [contextMeta, setContextMeta] = useState<AiContextMeta | null>(null);
-  const [errorState, setErrorState] =
-    useState<AiModuleErrorState<AiCommunityPlanResponse> | null>(null);
 
-  const generateCommunityPlan = async () => {
-    setLoading(true);
-    setErrorState(null);
-    setCompletedChecklist([]);
-    const result = await postAiEndpoint<AiCommunityPlanResponse>({
-      endpoint: "/api/ai/community",
-      body: {
-        locale,
-        location: toAiLocationPayload(selectedLocation),
-        communityType,
-        approxPopulation: Math.max(10, Math.min(50000, approxPopulation)),
-        budgetTier,
-        timeframe,
-        availableResources: availableResources.trim() || undefined,
-      },
-      fallbackErrorMessage: "Unable to generate community action plan.",
-      networkErrorMessage: "Network error while contacting Community Planner.",
-    });
-
-    if (!result.ok || !result.payload) {
-      setErrorState(
-        result.error ?? { message: "Unable to generate community action plan." }
-      );
-      setLoading(false);
-      return;
-    }
-
-    setPlan(result.payload.data);
-    setGeneratedFingerprint(recommendationFingerprint);
-    setAiGenerated(result.payload.aiGenerated);
-    setProvenanceMode(result.payload.provenanceMode);
-    setModelUsed(result.payload.modelUsed);
-    setCitations(result.payload.citations);
-    setContextMeta(result.payload.contextMeta);
-    addToast(
+  const {
+    loading,
+    data: plan,
+    generatedFingerprint,
+    aiGenerated,
+    provenanceMode,
+    modelUsed,
+    citations,
+    contextMeta,
+    errorState,
+    execute,
+    applyFallback,
+  } = useAiModuleRequest<AiCommunityPlanResponse>({
+    endpoint: "/api/ai/community",
+    locationKey: selectedLocation.id,
+    fallbackErrorMessage: "Unable to generate community action plan.",
+    networkErrorMessage: "Network error while contacting Community Planner.",
+    successToastMessage:
       locale === "hi"
         ? "सामुदायिक कार्य योजना तैयार हुई।"
-        : "Community action plan generated."
-    );
-    setLoading(false);
+        : "Community action plan generated.",
+    recommendationFingerprint,
+    addToast,
+  });
+
+  const generateCommunityPlan = async () => {
+    setCompletedChecklist([]);
+    await execute({
+      locale,
+      location: toAiLocationPayload(selectedLocation),
+      communityType,
+      approxPopulation: Math.max(10, Math.min(50000, approxPopulation)),
+      budgetTier,
+      timeframe,
+      availableResources: availableResources.trim() || undefined,
+    });
   };
 
   const formatPlanText = (p: AiCommunityPlanResponse) => {
@@ -292,55 +253,56 @@ export function CommunityView() {
             </div>
           </div>
 
-          <details className="text-xs text-muted-foreground">
-            <summary className="cursor-pointer select-none font-medium text-foreground/80">
-              {locale === "hi" ? "समय-सीमा, संसाधन और AI गोपनीयता" : "Timeframe, resources & AI privacy"}
-            </summary>
-            <div className="mt-3 space-y-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label htmlFor="comm-time" className="text-xs">
-                    {locale === "hi" ? "समय-सीमा" : "Timeframe"}
-                  </Label>
-                  <select
-                    id="comm-time"
-                    value={timeframe}
-                    onChange={(e) => setTimeframe(e.target.value as typeof timeframe)}
-                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
-                  >
-                    <option value="immediate_48h">
-                      {locale === "hi" ? "तत्काल (48 घंटे)" : "Immediate (48h)"}
-                    </option>
-                    <option value="weekly">
-                      {locale === "hi" ? "साप्ताहिक (7-दिन)" : "7-Day Rollout"}
-                    </option>
-                    <option value="winter_season">
-                      {locale === "hi" ? "30-दिवसीय / शीतकालीन" : "30-Day / Winter"}
-                    </option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <Label htmlFor="comm-resources" className="text-xs">
-                    {locale === "hi" ? "उपलब्ध संसाधन" : "Available Resources"}
-                  </Label>
-                  <Input
-                    id="comm-resources"
-                    value={availableResources}
-                    onChange={(e) => setAvailableResources(e.target.value)}
-                    placeholder={
-                      locale === "hi"
-                        ? "जैसे: नोटिस बोर्ड, सुरक्षा गार्ड"
-                        : "e.g. notice board, club room"
-                    }
-                    maxLength={300}
-                  />
-                </div>
+          <AiPrivacyAccordion
+            summaryLabel={
+              locale === "hi"
+                ? "समय-सीमा, संसाधन और AI गोपनीयता"
+                : "Timeframe, resources & AI privacy"
+            }
+          >
+            <div className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="comm-time" className="text-xs">
+                  {locale === "hi" ? "समय-सीमा" : "Timeframe"}
+                </Label>
+                <select
+                  id="comm-time"
+                  value={timeframe}
+                  onChange={(e) => setTimeframe(e.target.value as typeof timeframe)}
+                  className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm"
+                >
+                  <option value="immediate_48h">
+                    {locale === "hi" ? "तत्काल (48 घंटे)" : "Immediate (48h)"}
+                  </option>
+                  <option value="weekly">
+                    {locale === "hi" ? "साप्ताहिक (7-दिन)" : "7-Day Rollout"}
+                  </option>
+                  <option value="winter_season">
+                    {locale === "hi" ? "30-दिवसीय / शीतकालीन" : "30-Day / Winter"}
+                  </option>
+                </select>
               </div>
-              <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
-              <AiDisclosureNote />
+
+              <div className="space-y-1">
+                <Label htmlFor="comm-resources" className="text-xs">
+                  {locale === "hi" ? "उपलब्ध संसाधन" : "Available Resources"}
+                </Label>
+                <Input
+                  id="comm-resources"
+                  value={availableResources}
+                  onChange={(e) => setAvailableResources(e.target.value)}
+                  placeholder={
+                    locale === "hi"
+                      ? "जैसे: नोटिस बोर्ड, सुरक्षा गार्ड"
+                      : "e.g. notice board, club room"
+                  }
+                  maxLength={300}
+                />
+              </div>
             </div>
-          </details>
+            <PersonalizationStatusStrip generatedFingerprint={generatedFingerprint} />
+            <AiDisclosureNote />
+          </AiPrivacyAccordion>
         </CardContent>
       </Card>
 
@@ -350,196 +312,30 @@ export function CommunityView() {
           errorCode={errorState.errorCode}
           onRetry={() => void generateCommunityPlan()}
           hasFallback={Boolean(errorState.fallback)}
-          onUseFallback={() => {
-            if (!errorState.fallback) return;
-            setPlan(errorState.fallback);
-            setAiGenerated(false);
-            setModelUsed(undefined);
-            setContextMeta(errorState.contextMeta ?? null);
-            setErrorState(null);
-          }}
+          onUseFallback={applyFallback}
         />
       ) : null}
 
       {loading ? (
         <Skeleton className="h-64 w-full rounded-2xl" />
       ) : plan ? (
-        <div className="space-y-5">
-          <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <AiProvenanceBadge
-                aiGenerated={aiGenerated}
-                provenanceMode={provenanceMode}
-                modelUsed={modelUsed}
-              />
-              <div className="print:hidden flex flex-wrap items-center gap-1.5">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void handleCopyPlan()}
-                  className="gap-1.5 text-xs"
-                >
-                  {copiedPlan ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
-                  <span>{locale === "hi" ? "कॉपी करें" : "Copy"}</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void handleSharePlan()}
-                  className="gap-1.5 text-xs"
-                >
-                  <Share2 className="size-3.5" />
-                  <span>{locale === "hi" ? "शेयर करें" : "Share"}</span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.print()}
-                  className="gap-1.5 text-xs"
-                >
-                  <Printer className="size-3.5" />
-                  <span>{locale === "hi" ? "प्रिंट" : "Print"}</span>
-                </Button>
-                <Link
-                  href="/report"
-                  className={cn(
-                    buttonVariants({ variant: "secondary", size: "sm" }),
-                    "gap-1.5 text-xs"
-                  )}
-                >
-                  <FileText className="size-3.5" />
-                  <span>{locale === "hi" ? "पूर्ण रिपोर्ट" : "Full Report"}</span>
-                </Link>
-              </div>
-            </div>
-
-            <h2 className="text-lg font-semibold">{plan.headline}</h2>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                {locale === "hi" ? "लागत श्रेणी:" : "Cost Tier:"} {budgetTier.replace("_", " ")}
-              </Badge>
-              <Badge variant="outline">
-                {locale === "hi" ? "समुदाय आकार:" : "Community Size:"} ~{approxPopulation}
-              </Badge>
-              {availableResources.trim() ? (
-                <Badge variant="outline">
-                  {locale === "hi" ? "संसाधन:" : "Resources:"} {availableResources.trim()}
-                </Badge>
-              ) : null}
-            </div>
-            {contextMeta ? <ContextMetaStrip meta={contextMeta} /> : null}
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {[
-              {
-                title: locale === "hi" ? "आज" : "Today",
-                items: plan.immediateActions,
-              },
-              {
-                title: locale === "hi" ? "इस सप्ताह" : "This Week",
-                items: plan.weeklyActions,
-              },
-              {
-                title: locale === "hi" ? "इस महीने" : "This Month",
-                items: plan.longTermActions,
-              },
-            ].map((section) => (
-              <Card key={section.title} size="sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{section.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-                    {section.items.map((item) => (
-                      <li key={item} className="flex items-start gap-2">
-                        <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <details className="rounded-2xl border border-border bg-card p-4 text-xs">
-            <summary className="cursor-pointer select-none text-sm font-semibold text-foreground">
-              {locale === "hi"
-                ? `जिम्मेदारियाँ, चेकलिस्ट (${completedChecklist.length}/${plan.implementationChecklist.length}) और स्वास्थ्य नोट्स`
-                : `Checklist (${completedChecklist.length}/${plan.implementationChecklist.length}), roles & safety notes`}
-            </summary>
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2.5">
-                  <p className="flex items-center gap-1.5 font-semibold text-foreground">
-                    <Users className="size-4 text-primary" aria-hidden="true" />
-                    {locale === "hi" ? "जिम्मेदार श्रेणियाँ:" : "Stakeholders:"}{" "}
-                    <span className="font-normal text-muted-foreground">
-                      {plan.responsibilityCategories.join(" · ")}
-                    </span>
-                  </p>
-                  <div className="space-y-1.5">
-                    {plan.implementationChecklist.map((c) => {
-                      const checked = completedChecklist.includes(c);
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          aria-pressed={checked}
-                          onClick={() => toggleChecklistItem(c)}
-                          className={`flex w-full items-start gap-2 rounded-lg border p-2 text-left text-xs transition-colors ${
-                            checked
-                              ? "border-primary/40 bg-primary/10 text-foreground"
-                              : "border-border bg-muted/20 text-muted-foreground hover:bg-muted/40"
-                          }`}
-                        >
-                          {checked ? (
-                            <CheckSquare className="mt-0.5 size-3.5 shrink-0 text-primary" />
-                          ) : (
-                            <Square className="mt-0.5 size-3.5 shrink-0" />
-                          )}
-                          <span>{c}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-muted-foreground">
-                  <p className="flex items-center gap-1.5 font-semibold text-foreground">
-                    <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
-                    {locale === "hi"
-                      ? "अपेक्षित परिणाम व स्वास्थ्य सुरक्षा"
-                      : "Outcomes & Health Safety"}
-                  </p>
-                  <ul className="space-y-1">
-                    {plan.expectedQualitativeOutcomes.map((o) => (
-                      <li key={o}>• {o}</li>
-                    ))}
-                  </ul>
-                  <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
-                    {plan.healthAndSafetyNotes.map((n) => (
-                      <p key={n}>• {n}</p>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <WhyRecommendationToggle
-                explanation={plan.whyThisRecommendation}
-                contextMeta={contextMeta ?? undefined}
-                dataBasis={plan.dataBasis}
-                sourceIds={plan.sourceIds}
-                citations={citations}
-                limitation={plan.disclaimer}
-              />
-            </div>
-          </details>
-        </div>
+        <CommunityActionPlanResults
+          plan={plan}
+          aiGenerated={aiGenerated}
+          provenanceMode={provenanceMode}
+          modelUsed={modelUsed}
+          citations={citations}
+          contextMeta={contextMeta}
+          budgetTier={budgetTier}
+          approxPopulation={approxPopulation}
+          availableResources={availableResources}
+          completedChecklist={completedChecklist}
+          copiedPlan={copiedPlan}
+          locale={locale}
+          onCopyPlan={() => void handleCopyPlan()}
+          onSharePlan={() => void handleSharePlan()}
+          onToggleChecklistItem={toggleChecklistItem}
+        />
       ) : (
         <EmptyStateCard
           title={
