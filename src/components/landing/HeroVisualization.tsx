@@ -8,13 +8,16 @@ interface HeroVisualizationProps {
   smogLabel: string;
   cleanLabel: string;
   previewBadge: string;
+  locale?: "en" | "hi";
 }
 
 export function HeroVisualization({
   smogLabel,
   cleanLabel,
   previewBadge,
+  locale = "en",
 }: HeroVisualizationProps) {
+  const isHi = locale === "hi";
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -166,14 +169,14 @@ export function HeroVisualization({
           <div className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
             <div>
               <p className="whitespace-nowrap text-[10px] uppercase tracking-wider text-[#A8C9B7] sm:text-[11px]">
-                Illustrative US AQI
+                {isHi ? "उदाहरणात्मक US AQI" : "Illustrative US AQI"}
               </p>
               <p className="font-mono text-xl font-semibold text-[#FFB547]">
-                248 <span className="text-xs font-normal text-[#A8C9B7]">· Demo</span>
+                248 <span className="text-xs font-normal text-[#A8C9B7]">· {isHi ? "डेमो" : "Demo"}</span>
               </p>
             </div>
             <Badge className="border-amber-400/35 bg-amber-500/15 text-[#FFB547] hover:bg-amber-500/20">
-              Very Unhealthy
+              {isHi ? "बहुत अस्वस्थ" : "Very Unhealthy"}
             </Badge>
           </div>
 
@@ -181,10 +184,10 @@ export function HeroVisualization({
             <ShieldCheck className="size-5 shrink-0 text-[#34E8A5]" aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-xs font-semibold text-[#F5F9F7]">
-                Health Protection Active
+                {isHi ? "स्वास्थ्य सुरक्षा सक्रिय" : "Health Protection Active"}
               </p>
               <p className="truncate text-[11px] text-[#A8C9B7]">
-                Shift morning exercise indoors · enclosed metro
+                {isHi ? "सुबह का व्यायाम घर के भीतर करें · बंद मेट्रो" : "Shift morning exercise indoors · enclosed metro"}
               </p>
             </div>
           </div>

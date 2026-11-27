@@ -15,6 +15,7 @@ interface PollutantCardProps {
   unit: string;
   description: string;
   sparklineValues?: number[];
+  locale?: "en" | "hi";
 }
 
 export function PollutantCard({
@@ -24,6 +25,7 @@ export function PollutantCard({
   unit,
   description,
   sparklineValues,
+  locale = "en",
 }: PollutantCardProps) {
   const validSeries = (sparklineValues ?? []).filter(
     (v) => Number.isFinite(v) && v >= 0
@@ -78,7 +80,7 @@ export function PollutantCard({
               : value.toFixed(1)
             : "—"}
           <span className="ml-1 text-[11px] font-normal text-muted-foreground">
-            {value !== null ? unit : "Unavailable"}
+            {value !== null ? unit : locale === "hi" ? "अनुपलब्ध" : "Unavailable"}
           </span>
         </p>
 
@@ -99,7 +101,7 @@ export function PollutantCard({
           </svg>
         ) : (
           <div className="h-6 flex items-center text-[10px] text-muted-foreground/70">
-            No series
+            {locale === "hi" ? "डेटा अनुपलब्ध" : "No series"}
           </div>
         )}
       </CardContent>

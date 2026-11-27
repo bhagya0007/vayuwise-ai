@@ -492,3 +492,127 @@ Executed **11** live HTTP `POST` requests against the built production server (`
    git push origin main
    ```
 2. **Confirm Updated Production Deployment:** Verify [https://vayuwise-ai-one.vercel.app/](https://vayuwise-ai-one.vercel.app/) updates to the simplified UX after Vercel finishes building `main`.
+
+---
+
+## Final UX Implementation and Deployment Verification
+
+- **Audit Date:** 2026-11-27 (17:08 IST)
+- **Final Verdict:** **UX IMPLEMENTED AND LIVE**
+  - All core UX simplifications, progressive disclosure accordions, grouped sidebar + 5-tab mobile bottom navigation, streamlined 5-section landing page, 2-tab impact calculator, minimalist AI modules, and updated Gemini prompts are implemented in local source code, committed cleanly on `main`, pushed to GitHub, deployed on Vercel, and verified live in Chromium across desktop and mobile viewports with zero production console/page errors. (Minor polish items and one flaky unmocked E2E test are documented below.)
+
+### 1. Git, GitHub, Vercel & Caching Evidence
+- **Local Branch:** `main` (clean working tree prior to appending this audit report; `0` ahead / `0` behind `origin/main`).
+- **Local Commit Hash & Message:** `cf2b2d8ba2ee68c096b7204af1b2dd552c43e9fe` — `feat: simplify consumer UX, navigation and progressive disclosure`
+- **Remote GitHub `origin/main` Hash & Message:** `cf2b2d8ba2ee68c096b7204af1b2dd552c43e9fe` (verified via both `git rev-parse origin/main` and GitHub REST API `/repos/bhagya0007/vayuwise-ai/commits/main`, authored `2026-11-27T11:06:40Z`). Local and remote match identically.
+- **Repository Size & Credential Check:** `131` tracked files totaling `1,442,958` bytes (`1.38 MB`, well under `10 MB` cap). `.env.local`, `node_modules`, `.next`, `test-results`, and `playwright-report` are properly excluded from Git.
+- **Live Vercel Production Evidence (`https://vayuwise-ai-one.vercel.app/`):**
+  - `GET /` returned HTTP `200`, `Cache-Control: public, max-age=0, must-revalidate`, serving `"Get Started"`, `"How It Works"`, `"Methodology & Data Sources"`, and `0` occurrences of `"Planned AI"`.
+  - `GET /api/health` returned HTTP `200`: `{"status":"ok","app":"VayuWise AI","geminiConfigured":true,"aiEnabled":true,"geminiModel":"gemini-3.1-flash-lite","release":"release-candidate"}`.
+  - Service Worker (`/sw.js`, `CACHE_NAME = "vayuwise-shell-v2"`) explicitly bypasses `/api/*` and non-GET requests; `/api/ai/*` returns `Cache-Control: no-store`. No stale service-worker or CDN content served.
+
+### 2. Mandatory UX Verification Table
+
+| UX Requirement | Local Implementation | GitHub | Live Vercel | Browser Verified | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Git & Vercel release parity (`cf2b2d8`) | Yes | Yes (`main` matches `HEAD`) | Yes (`/` & `/api/health`) | Yes | **PASS** |
+| Landing page: 5 visual sections & no "Planned AI" | 4 `<section>` blocks (5 sections w/ Final CTA) | Yes | Yes | Yes (Hero `Get Started`, 6 features, 3 steps, collapsed Methodology, CTA) | **PASS** |
+| Landing hero & header `"Get Started"` CTA | Hero: `Get Started`; Header nav: `Launch Assistant` | Yes | Yes | Yes | **PARTIALLY IMPLEMENTED** |
+| Dashboard gauge, top-3 guidance, 4 quick actions & accordions | 216 gauge, top-3 cards, 4 actions, closed `<details>` | Yes | Yes | Yes (`1440x900`, `1920x1080`, `768x1024`, `390x844`, `360x800`) | **PASS** |
+| Sidebar groups + simplified labels + mobile bottom nav | `TODAY`/`TAKE ACTION`/`ACCOUNT & TOOLS` + 5 bottom tabs (`Home`, `Plan`, `AI`, `Impact`, `More`) | Yes | Yes | Yes (`0` overlap with composer) | **PASS** |
+| AI Assistant: concise Delhi protection w/o purifier + follow-up | Prompt & Zod schema concise; sticky composer | Yes | Yes (`aiGenerated: true`) | Yes (Turn 1: `64` words + 3 recs + cautions; Turn 2: `61` words + expandable sources) | **PASS** |
+| Planner (`6` slots, `Mark Done`, details), Indoor (`3` cards + Avoid), Sustainability (`Before -> After`), Community (`Today`/`This Week`/`This Month`) | Verified in components | Yes | Yes (all 4 AI endpoints HTTP 200) | Yes (verified populated UI on production) | **PASS** |
+| Impact Calculator: 4 default inputs, collapsed Advanced/Methodology, 2 tabs | Verified in `ImpactView.tsx` | Yes | Yes | Yes (`Travel CO₂e Impact` & `Outdoor Exposure Comparison` tabs) | **PASS** |
+| Profile (`Advanced Preferences`), Report & Settings clean layouts | Verified | Yes | Yes | Yes (`details` closed by default) | **PASS** |
+| Multi-viewport responsive (`1440`, `1920`, `768`, `390`, `360`), Dark/Light & EN/HI | Verified | Yes | Yes | Yes (`0` overflow; minor EN attributions inside HI cards) | **PARTIALLY IMPLEMENTED** |
+| Full E2E + Functional + Health & Open-Meteo 48h checks | Typecheck, lint, 79 unit, build OK; E2E `27/28` (1 live Open-Meteo timeout) | Yes | Yes (`48h` AQ + 6/6 Gemini APIs OK) | Yes (`0` prod console/page errors) | **PARTIALLY IMPLEMENTED** |
+
+### 3. Actual Browser Observations & UX Quality Comparison
+- **Pre-UX (`7a49484`) vs. Post-UX (`cf2b2d8`) Comparison:**
+  - Landing `<section>` elements: reduced from **6** to **4** (5 visual sections); dictionary size reduced from `31,684` bytes to `30,229` bytes.
+  - Primary desktop sidebar: reorganized from **11** flat links to **10** structured links under **3** groups (`TODAY`, `TAKE ACTION`, `ACCOUNT & TOOLS`), plus **5** mobile bottom-bar targets (`Home`, `Plan`, `AI`, `Impact`, `More`).
+  - Impact Calculator default inputs: reduced from **8** visible inputs upfront to **4** essential inputs (`Daily Travel Distance`, `Current Transport`, `Alternative Transport`, `Travel Days / Week`), moving **4** secondary inputs inside `Advanced Settings`, plus moving `Outdoor Exposure Comparison` to a dedicated second tab.
+  - Rendered visible word counts (`1440x900` on production): Landing `/` `394` words, `/dashboard` `390` words, `/assistant` `99` words, `/planner` `54` words, `/indoor-air` `155` words, `/sustainability` `63` words, `/impact` `365` words, `/community` `68` words, `/profile` `166` words, `/report` `499` words, `/settings` `111` words.
+- **Responsive, Theme & Console Checks:**
+  - `0` horizontal overflow (`scrollWidth === clientWidth`) across all `5` tested viewports (`1440x900`, `1920x1080`, `768x1024`, `390x844`, `360x800`) on both local and Vercel production.
+  - Assistant message composer stays inside the initial viewport and cleanly above the mobile bottom navigation bar (`composerOverlapMobileNav: false`) at `390x844` and `360x800`.
+  - Production Chromium session recorded **`0` console errors and `0` page errors** across all 11 routes, theme toggle, Hindi switch, interactive charts/tabs, and live Gemini workflows. (Local dev server logged 2 React dev-mode hydration warnings on Base UI `LocationSearch` `caret-color` style.)
+
+### 4. Screenshot Evidence (Git-Ignored under `test-results/ux-verification/`)
+- Production desktop & viewport captures: `test-results/ux-verification/production/desktop-1440-{home,dashboard,planner,assistant,indoor-air,sustainability,impact,community,profile,report,settings}.png`, `vp-1920x1080-*.png`, `vp-768x1024-*.png`, `vp-390x844-*.png`, `vp-360x800-*.png`, `locale-hi-home.png`, `theme-light-dashboard.png`, `assistant-2turn-verified.png`, `planner-generated.png`, `indoor-air-generated.png`, `sustainability-generated.png`, `community-generated.png`.
+- Local captures: matching route, viewport, theme, Hindi, and live Assistant sets under `test-results/ux-verification/local/`.
+- Raw diagnostic JSON: `test-results/ux-verification/api-results.json`, `verification-results.json`, `populated-modules.json`.
+
+### 5. Automated Test & Live Regression Results
+- `npm run typecheck`: Passed (`0` errors).
+- `npm run lint`: Passed (`0` errors, `0` warnings).
+- `npm run test`: **79 passed** across **9 files** (`6.24s`).
+- `npm run build`: Passed (**25** App Router routes compiled).
+- `npm run test:e2e`: **27 passed / 1 failed** (`26.3s`) — `tests/e2e/phase09_ux.spec.ts:47` timed out waiting for `Plan my day` link because live `/api/air-quality` upstream Open-Meteo timed out (`Upstream air quality request timed out`), displaying the honest fallback card instead of dashboard widgets.
+- **Live Regression (Local `localhost:3077` & Production `vayuwise-ai-one.vercel.app`):**
+  - `/api/health`: `200` (`geminiConfigured: true`, `aiEnabled: true`, `gemini-3.1-flash-lite`)
+  - `/api/locations/search?q=Mumbai`: `200` (`1` result)
+  - `/api/air-quality` (New Delhi): `200`, `usAqi: 216`, **`48` forecast hours**, `Open-Meteo / CAMS`
+  - All 6 Gemini AI endpoints (`/api/ai/chat`, `/api/ai/plan`, `/api/ai/indoor-air`, `/api/ai/sustainability`, `/api/ai/community`, `/api/ai/impact`): `6/6` HTTP `200`, `aiGenerated: true` on both local and production (`gemini-3.1-flash-lite` & `gemini-3.5-flash-lite` backup model).
+
+### 6. Remaining Issues (Not Modified — Verification-Only Audit)
+1. **Unmocked E2E dashboard test flake (`tests/e2e/phase09_ux.spec.ts:47`):** Root cause: relies on live external Open-Meteo timing during headless Chromium E2E execution instead of mocking `/api/air-quality` like `phase08.spec.ts`. *Fix:* Add deterministic Playwright route mock in `tests/e2e/phase09_ux.spec.ts`.
+2. **Landing header CTA copy mismatch:** Hero button displays `"Get Started"`, while top header nav button displays `"Launch Assistant"` (`landing.nav.launchAssistant` in [dictionary.ts](file:///e:/VayuWise-AI/src/lib/i18n/dictionary.ts#L322)). *Fix:* Update `landing.nav.launchAssistant` or header CTA to match `"Get Started"` if consistency across header & hero is desired.
+3. **Minor untranslated English strings in Hindi mode & Sustainability edge inference:**
+   - [DashboardView.tsx](file:///e:/VayuWise-AI/src/components/dashboard/DashboardView.tsx#L502-L513) gauge footnote (`"Regional modeled estimates via Open-Meteo / CAMS..."`) and `HeroVisualization.tsx` overlay badges (`"ILLUSTRATIVE US AQI"`, `"Demo"`, `"Health Protection Active"`) remain in English when Hindi is active.
+   - [SustainabilityView.tsx](file:///e:/VayuWise-AI/src/components/modules/SustainabilityView.tsx#L168-L173) infers `metro_rail` CO₂e avoidance (`~463.7 kg CO2e/yr avoided`) whenever `domain === "school_college_travel"`, even when Gemini suggests shifting outdoor play indoors (`Outdoor morning walk or play -> Indoor physical activity`). *Fix:* Only compute deterministic commute CO₂e deltas when baseline/alternative text reflects motorized trip replacement.
+
+### 7. Manual Tasks & Submission Readiness
+- **Submission Readiness:** **READY FOR SUBMISSION** (core functionality, live Open-Meteo 48h data, genuine Gemini AI, security/privacy boundaries, and simplified consumer UX are live at `https://vayuwise-ai-one.vercel.app/` and `https://github.com/bhagya0007/vayuwise-ai`).
+- **Optional Owner Actions before 29 Nov 2026 11:59 PM IST deadline:**
+  1. Commit & push this updated `docs/PHASE_REPORT.md` if desired (`git add docs/PHASE_REPORT.md && git commit -m "docs: add final UX and live deployment verification report" && git push origin main`), or optionally apply the 3 minor non-blocking fixes above beforehand.
+  2. Delete local temporary verification artifacts (`test-results/ux-verification/`) later if desired (already excluded by `.gitignore`).
+
+---
+
+## Final Release — Targeted Bug Fixes
+
+- **Date:** 2026-11-27
+- **Status:** Completed & Verified (Prepared for Owner Commit & Push)
+
+### 1. Verified Sustainability Transport Impact Guardrails
+- Created shared pure validator [sustainability-swap.ts](file:///e:/VayuWise-AI/src/lib/impact/sustainability-swap.ts) (`evaluateSustainabilityTransportSwap`) and wired it into [SustainabilityView.tsx](file:///e:/VayuWise-AI/src/components/modules/SustainabilityView.tsx):
+  - Removed fallback `"metro_rail"` assumption and never infers metro travel from `school_college_travel` alone.
+  - Explicitly rejects non-transport / health-shift recommendations (`indoor exercise`, `quiet play`, `outdoor walk/play`, `ventilation`, `HEPA purifier`, `incense`, `cooking`, `waste`, etc.) and walking/cycling baselines.
+  - Requires a valid motorized baseline mode, explicitly identified alternative mode, `baselineMode !== alternativeMode`, positive commute distance (`dailyCommuteKm > 0`), and `avoidedAnnualKgCo2e > 0`.
+  - When unquantified, renders **`"Impact not quantified"`** (Hindi: **`"प्रभाव संख्याबद्ध नहीं"`**) with qualitative benefit only, omits the `"Calculate Impact ->"` link, and passes `undefined` for `baselineMode`, `alternativeMode`, and `distanceKm` to `logActivity` so [activity-tracker.ts](file:///e:/VayuWise-AI/src/lib/impact/activity-tracker.ts) records `calculatedSavingsKgCo2e: null` and `emissionFactorVersion: null`.
+  - When quantified, displays verified factor IDs, `gasBasis` (`CO₂` vs `CO₂e`), calculation boundaries (`tailpipe_ttw`, `electricity_generation_scope2`, etc.), registry version, and source titles inside `"Trade-offs & Methodology"`.
+- Added 4 Vitest unit regression tests in [sustainability-swap.test.ts](file:///e:/VayuWise-AI/tests/unit/sustainability-swap.test.ts) plus E2E verification in [phase09_ux.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase09_ux.spec.ts).
+
+### 2. Stabilized E2E Suite & Failure-State Coverage
+- Updated [phase09_ux.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase09_ux.spec.ts) to mock `**/api/air-quality**` deterministically via `getDemoForecast("new-delhi")` while retaining all quick-action and progressive-disclosure accordion assertions.
+- Added an independent E2E test verifying HTTP `503` `/api/air-quality` failure rendering (`Live Air Quality Unavailable`) and explicit switching to `Demo Data — Not Current Air Quality Readings`.
+- Updated [phase01.test.tsx](file:///e:/VayuWise-AI/tests/unit/phase01.test.tsx) and [phase01.spec.ts](file:///e:/VayuWise-AI/tests/e2e/phase01.spec.ts) (`main` `"Get Started"` CTA selector) cleanly.
+
+### 3. UI Consistency, Hindi Localization & Local Hydration Fix
+- Changed landing top-header CTA from `"Launch Assistant"` to **`"Get Started"`** in [dictionary.ts](file:///e:/VayuWise-AI/src/lib/i18n/dictionary.ts) (`"शुरू करें"` in Hindi).
+- Localized remaining user-facing strings in Hindi mode across [HeroVisualization.tsx](file:///e:/VayuWise-AI/src/components/landing/HeroVisualization.tsx), [LandingPage.tsx](file:///e:/VayuWise-AI/src/components/landing/LandingPage.tsx), [DashboardView.tsx](file:///e:/VayuWise-AI/src/components/dashboard/DashboardView.tsx), [PollutantCard.tsx](file:///e:/VayuWise-AI/src/components/dashboard/PollutantCard.tsx), [IndoorAirView.tsx](file:///e:/VayuWise-AI/src/components/modules/IndoorAirView.tsx), [SustainabilityView.tsx](file:///e:/VayuWise-AI/src/components/modules/SustainabilityView.tsx), and [CommunityView.tsx](file:///e:/VayuWise-AI/src/components/modules/CommunityView.tsx) while preserving Open-Meteo/CAMS attribution and health/medical safety warnings.
+- Fixed the local dev React hydration mismatch (`style={{caret-color:"transparent"}}` on Base UI `FieldControl`) by using a styled native `<input data-slot="input">` in [LocationSearch.tsx](file:///e:/VayuWise-AI/src/components/dashboard/LocationSearch.tsx).
+
+### 4. Final Verification Results (After Code Changes)
+- `npm run typecheck`: Passed (`0` errors)
+- `npm run lint`: Passed (`0` errors, `0` warnings)
+- `npm run test`: **83 passed** across **10 files** (`2.36s`)
+- `npm run build`: Passed (**25** App Router routes compiled cleanly)
+- `npm run test:e2e`: **30 passed** across **8 files** (`9.8s`)
+- **Live Server & Browser Verification (`next start -p 3088`):**
+  - `/api/air-quality` (`New Delhi`): HTTP `200`, `ok: true`, `usAqi: 216`, **`48` hourly forecast points**
+  - `/api/ai/chat`: HTTP `200`, `ok: true`, `aiGenerated: true`, `provenanceMode: "gemini_safety_adjusted"`, `modelUsed: "gemini-3.1-flash-lite"`
+  - `/api/ai/sustainability`: HTTP `200`, `ok: true`, `aiGenerated: true`, `modelUsed: "gemini-3.1-flash-lite"`, `3` alternatives
+  - Chromium check on `/` + `/dashboard`: header `"Get Started"` present (`1`), Hindi Hero + Gauge attributions rendered (`1`), **`0` console errors, `0` page errors** (local hydration warning resolved)
+- **Repository Size & Security Check:** `133` Git-eligible files totaling `1,473,836` bytes (`1.41 MB`, well under `10 MB`); `.env.local` verified untracked (`0` credentials exposed).
+
+### MANUAL TASKS REQUIRED FROM PROJECT OWNER
+1. **Commit & Push Targeted Release Fixes to GitHub (Triggers Vercel Auto-Redeploy):**
+   ```bash
+   git status
+   git add -A
+   git commit -m "fix: tighten sustainability swap validation, stabilize E2E, align CTA and Hindi copy"
+   git push origin main
+   ```
+2. **Confirm Updated Production Deployment:** Once Vercel finishes deploying `main` to `https://vayuwise-ai-one.vercel.app/`, confirm the updated header CTA (`Get Started`), Hindi badges, and `"Impact not quantified"` fallback on `/sustainability`.

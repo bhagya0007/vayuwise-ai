@@ -215,7 +215,9 @@ export function IndoorAirView() {
                 className={`size-4 ${loading ? "animate-spin" : ""}`}
                 aria-hidden="true"
               />
-              <span>Generate Indoor Plan</span>
+              <span>
+                {locale === "hi" ? "इनडोर योजना बनाएँ" : "Generate Indoor Plan"}
+              </span>
             </Button>
           </div>
         </CardHeader>
@@ -469,7 +471,7 @@ export function IndoorAirView() {
           }
           action={
             <Button type="button" onClick={() => void generateCoach()}>
-              Generate Indoor Plan
+              {locale === "hi" ? "इनडोर योजना बनाएँ" : "Generate Indoor Plan"}
             </Button>
           }
         />

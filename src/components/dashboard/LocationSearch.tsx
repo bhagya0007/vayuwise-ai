@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, MapPin, Search, X } from "lucide-react";
 import { useAppPreferences } from "@/components/providers/AppProviders";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { DEMO_LOCATIONS } from "@/lib/demo/air-quality-demo";
 import { cn } from "@/lib/utils";
 import type { GeoLocation } from "@/types/domain";
@@ -215,8 +214,9 @@ export function LocationSearch({ onSelectLocation }: LocationSearchProps) {
           className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
           aria-hidden="true"
         />
-        <Input
+        <input
           type="search"
+          data-slot="input"
           role="combobox"
           aria-expanded={isOpen}
           aria-controls="city-search-listbox"
@@ -235,7 +235,7 @@ export function LocationSearch({ onSelectLocation }: LocationSearchProps) {
             }
           }}
           onKeyDown={handleKeyDown}
-          className="h-9 pl-9 pr-8"
+          className="h-9 w-full min-w-0 rounded-lg border border-input bg-transparent pl-9 pr-8 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
         />
         {query ? (
           <button

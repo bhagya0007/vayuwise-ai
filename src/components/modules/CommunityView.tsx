@@ -244,7 +244,9 @@ export function CommunityView() {
                 className={`size-4 ${loading ? "animate-spin" : ""}`}
                 aria-hidden="true"
               />
-              <span>Generate Action Plan</span>
+              <span>
+                {locale === "hi" ? "कार्य योजना बनाएँ" : "Generate Action Plan"}
+              </span>
             </Button>
           </div>
         </CardHeader>
@@ -582,7 +584,7 @@ export function CommunityView() {
           }
           action={
             <Button type="button" onClick={() => void generateCommunityPlan()}>
-              Generate Action Plan
+              {locale === "hi" ? "कार्य योजना बनाएँ" : "Generate Action Plan"}
             </Button>
           }
         />

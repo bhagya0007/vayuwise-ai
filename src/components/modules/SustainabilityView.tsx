@@ -22,8 +22,7 @@ import { EmptyStateCard } from "@/components/common/Controls";
 import { useAppPreferences } from "@/components/providers/AppProviders";
 import type { VerifiedKnowledgeSource } from "@/lib/ai/knowledge-registry";
 import type { AiSustainabilityResponse } from "@/lib/ai/schemas";
-import { compareTransportScenarios } from "@/lib/impact/transport-calculator";
-import { normalizeLegacyCommuteMode } from "@/lib/personalization/profile-storage";
+import { evaluateSustainabilityTransportSwap } from "@/lib/impact/sustainability-swap";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -35,21 +34,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import type { BudgetTier, CommuteMode } from "@/types/domain";
-
-function inferAltModeFromText(
-  text: string
-): Exclude<CommuteMode, "walk_cycle"> {
-  const lower = text.toLowerCase();
-  if (lower.includes("remote") || lower.includes("work from home") || lower.includes("wfh")) {
-    return "work_from_home";
-  }
-  if (lower.includes("carpool")) return "carpool";
-  if (lower.includes("bus")) return "bus";
-  if (lower.includes("electric") && lower.includes("two")) return "two_wheeler_electric";
-  if (lower.includes("electric") && lower.includes("car")) return "car_electric";
-  return "metro_rail";
-}
+import type { BudgetTier } from "@/types/domain";
 
 export function SustainabilityView() {
   const {
@@ -89,11 +74,17 @@ export function SustainabilityView() {
     contextMeta?: AiContextMeta;
   } | null>(null);
 
-  const normalizedUserBase = normalizeLegacyCommuteMode(profile.primaryCommute);
-  const effectiveBaseMode: Exclude<CommuteMode, "walk_cycle"> =
-    normalizedUserBase === "metro_rail" || normalizedUserBase === "work_from_home"
-      ? "car_petrol"
-      : normalizedUserBase;
+  const evaluateAltSwap = (alt: AiSustainabilityResponse["alternatives"][number]) =>
+    evaluateSustainabilityTransportSwap({
+      domain: alt.domain,
+      currentActivity: alt.currentActivity,
+      suggestedAlternative: alt.suggestedAlternative,
+      profilePrimaryCommute: profile.primaryCommute,
+      dailyCommuteKm: profile.dailyCommuteKm,
+      commuteDaysPerWeek: profile.commuteDaysPerWeek ?? 5,
+      workingWeeksPerYear: profile.workingWeeksPerYear ?? 48,
+      vehicleOccupancy: profile.vehicleOccupancy ?? 1,
+    });
 
   const generateAlternatives = async () => {
     setLoading(true);
@@ -166,27 +157,25 @@ export function SustainabilityView() {
   };
 
   const handleLogAlternative = (alt: AiSustainabilityResponse["alternatives"][number]) => {
-    const isCommute =
-      alt.domain === "daily_commute" || alt.domain === "school_college_travel";
-    const altMode = isCommute
-      ? inferAltModeFromText(alt.suggestedAlternative)
-      : undefined;
+    const swap = evaluateAltSwap(alt);
+    const hasVerifiedTransport =
+      swap.quantified && Boolean(swap.baselineMode && swap.alternativeMode);
 
     const outcome = logActivity({
-      activityType:
-        altMode === "work_from_home"
+      activityType: !hasVerifiedTransport
+        ? "indoor_air_action"
+        : swap.alternativeMode === "work_from_home"
           ? "avoided_travel"
-          : altMode === "carpool"
+          : swap.alternativeMode === "carpool"
             ? "carpooled"
-            : isCommute
-              ? "used_public_transport"
-              : "indoor_air_action",
+            : "used_public_transport",
       title: alt.suggestedAlternative.slice(0, 120),
       dedupeKey: `sust:${alt.id}`,
-      baselineMode: isCommute ? effectiveBaseMode : undefined,
-      alternativeMode: altMode,
-      distanceKm: isCommute ? profile.dailyCommuteKm : undefined,
-      occupancy: altMode === "carpool" ? 3 : 1,
+      baselineMode: hasVerifiedTransport ? swap.baselineMode : undefined,
+      alternativeMode: hasVerifiedTransport ? swap.alternativeMode : undefined,
+      distanceKm: hasVerifiedTransport ? profile.dailyCommuteKm : undefined,
+      occupancy:
+        hasVerifiedTransport && swap.alternativeMode === "carpool" ? 3 : 1,
     });
 
     if (!outcome.added) {
@@ -231,7 +220,9 @@ export function SustainabilityView() {
                 className={`size-4 ${loading ? "animate-spin" : ""}`}
                 aria-hidden="true"
               />
-              <span>Suggest Alternatives</span>
+              <span>
+                {locale === "hi" ? "विकल्प सुझाएँ" : "Suggest Alternatives"}
+              </span>
             </Button>
           </div>
         </CardHeader>
@@ -343,28 +334,8 @@ export function SustainabilityView() {
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {data.alternatives.map((alt) => {
-              const isCommute =
-                alt.domain === "daily_commute" ||
-                alt.domain === "school_college_travel";
-              const inferredAlt = inferAltModeFromText(alt.suggestedAlternative);
-              const detPreview = isCommute
-                ? compareTransportScenarios({
-                    baseline: {
-                      mode: effectiveBaseMode,
-                      roundTripDistanceKm: profile.dailyCommuteKm,
-                      travelDaysPerWeek: profile.commuteDaysPerWeek ?? 5,
-                      workingWeeksPerYear: profile.workingWeeksPerYear ?? 48,
-                      occupancy: profile.vehicleOccupancy ?? 1,
-                    },
-                    alternative: {
-                      mode: inferredAlt,
-                      roundTripDistanceKm: profile.dailyCommuteKm,
-                      travelDaysPerWeek: profile.commuteDaysPerWeek ?? 5,
-                      workingWeeksPerYear: profile.workingWeeksPerYear ?? 48,
-                      occupancy: inferredAlt === "carpool" ? 3 : 1,
-                    },
-                  })
-                : null;
+              const swap = evaluateAltSwap(alt);
+              const detPreview = swap.quantified ? swap.comparison ?? null : null;
 
               return (
                 <Card key={alt.id} className="flex flex-col justify-between">
@@ -405,18 +376,19 @@ export function SustainabilityView() {
                   </CardHeader>
 
                   <CardContent className="space-y-3 text-xs">
-                    {detPreview && detPreview.avoidedAnnualKgCo2e > 0 ? (
+                    {detPreview ? (
                       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-medium text-emerald-800 dark:text-emerald-300">
                         {locale === "hi" ? "अनुमानित लाभ:" : "Estimated benefit:"} ~
-                        {detPreview.avoidedAnnualKgCo2e.toFixed(1)} kg CO₂e/yr avoided ({profile.dailyCommuteKm} km/day)
+                        {detPreview.avoidedAnnualKgCo2e.toFixed(1)}{" "}
+                        {swap.gasUnitLabel ?? "kg CO₂e"}/yr avoided ({profile.dailyCommuteKm} km/day)
                       </div>
                     ) : (
-                      <p className="text-foreground/90">
-                        <span className="font-medium">
-                          {locale === "hi" ? "अनुमानित लाभ:" : "Estimated benefit:"}
-                        </span>{" "}
-                        {alt.qualitativeEnvironmentalBenefit}
-                      </p>
+                      <div className="rounded-lg border border-border/80 bg-muted/30 px-3 py-2 text-muted-foreground">
+                        <p className="font-medium text-foreground">
+                          {locale === "hi" ? "प्रभाव संख्याबद्ध नहीं" : "Impact not quantified"}
+                        </p>
+                        <p className="mt-0.5">{alt.qualitativeEnvironmentalBenefit}</p>
+                      </div>
                     )}
 
                     <details className="rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-muted-foreground">
@@ -431,6 +403,23 @@ export function SustainabilityView() {
                           </span>{" "}
                           {alt.healthAndPracticalTradeOff}
                         </p>
+                        {detPreview ? (
+                          <div className="space-y-1 rounded-lg border border-border/70 bg-background/60 p-2 text-[11px]">
+                            <p>
+                              <span className="font-semibold text-foreground">
+                                {locale === "hi" ? "स्रोत व सीमा:" : "Verified Factors & Boundaries:"}
+                              </span>{" "}
+                              {detPreview.baseline.factor.factorId} ({detPreview.baseline.factor.gasBasis},{" "}
+                              {detPreview.baseline.factor.calculationBoundary}) vs{" "}
+                              {detPreview.alternative.factor.factorId} ({detPreview.alternative.factor.gasBasis},{" "}
+                              {detPreview.alternative.factor.calculationBoundary}) · {detPreview.registryVersion}
+                            </p>
+                            <p>
+                              {detPreview.baseline.factor.sourceTitle} ·{" "}
+                              {detPreview.alternative.factor.sourceTitle}
+                            </p>
+                          </div>
+                        ) : null}
                         <WhyRecommendationToggle
                           explanation={alt.whyThisRecommendation}
                           contextMeta={contextMeta ?? undefined}
@@ -443,9 +432,9 @@ export function SustainabilityView() {
                     </details>
 
                     <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                      {isCommute ? (
+                      {detPreview && swap.baselineMode && swap.alternativeMode ? (
                         <Link
-                          href={`/impact?baseline=${effectiveBaseMode}&alternative=${inferredAlt}&distance=${profile.dailyCommuteKm}`}
+                          href={`/impact?baseline=${swap.baselineMode}&alternative=${swap.alternativeMode}&distance=${profile.dailyCommuteKm}`}
                           className={cn(
                             buttonVariants({ variant: "outline", size: "sm" }),
                             "gap-1.5 text-xs"
@@ -492,7 +481,7 @@ export function SustainabilityView() {
           }
           action={
             <Button type="button" onClick={() => void generateAlternatives()}>
-              Suggest Alternatives
+              {locale === "hi" ? "विकल्प सुझाएँ" : "Suggest Alternatives"}
             </Button>
           }
         />

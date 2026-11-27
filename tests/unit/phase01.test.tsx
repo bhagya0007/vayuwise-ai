@@ -83,7 +83,7 @@ describe("Phase 01 & 01.1 UI/UX & Dashboard Suite", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: /Breathe Smarter\./i })
     ).toBeDefined();
-    expect(screen.getAllByText(/Launch Assistant/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Get Started/i).length).toBeGreaterThanOrEqual(2);
     expect(document.documentElement.classList.contains("dark")).toBe(true);
 
     // Toggle dark -> light -> dark

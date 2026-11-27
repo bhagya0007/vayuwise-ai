@@ -436,7 +436,9 @@ export function DashboardView() {
           />
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4 text-xs">
             <p className="text-muted-foreground">
-              Need to inspect the interface offline? Switch explicitly to clearly labeled demonstration data.
+              {locale === "hi"
+                ? "ऑफ़लाइन इंटरफ़ेस देखने के लिए स्पष्ट लेबल वाले डेमो डेटा पर स्विच करें।"
+                : "Need to inspect the interface offline? Switch explicitly to clearly labeled demonstration data."}
             </p>
             <Button
               type="button"
@@ -466,7 +468,11 @@ export function DashboardView() {
               <CardHeader className="pb-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle className="text-base">
-                    {isDemo ? "US AQI (Demonstration)" : dict.dashboard.usAqiTitle}
+                    {isDemo
+                      ? locale === "hi"
+                        ? "US AQI (डेमो डेटा)"
+                        : "US AQI (Demonstration)"
+                      : dict.dashboard.usAqiTitle}
                   </CardTitle>
                   {classification.band ? (
                     <Badge variant="outline" className={classification.band.badgeClass}>
@@ -475,7 +481,9 @@ export function DashboardView() {
                         : classification.band.labelEn}
                     </Badge>
                   ) : (
-                    <Badge variant="outline">Unavailable</Badge>
+                    <Badge variant="outline">
+                      {locale === "hi" ? "अनुपलब्ध" : "Unavailable"}
+                    </Badge>
                   )}
                 </div>
                 <CardDescription>{dict.dashboard.usAqiNote}</CardDescription>
@@ -496,20 +504,38 @@ export function DashboardView() {
                     ? locale === "hi"
                       ? classification.band.descriptionHi
                       : classification.band.descriptionEn
-                    : "Current US AQI value is unavailable from the model."}
+                    : locale === "hi"
+                      ? "मॉडल से वर्तमान US AQI मान उपलब्ध नहीं है।"
+                      : "Current US AQI value is unavailable from the model."}
                 </p>
 
                 <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[11px] text-muted-foreground">
-                  Regional modeled estimates via{" "}
-                  <a
-                    href="https://open-meteo.com/en/docs/air-quality-api"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline hover:text-foreground"
-                  >
-                    Open-Meteo / CAMS
-                  </a>
-                  ; street-level traffic exposure can differ.
+                  {locale === "hi" ? (
+                    <>
+                      <a
+                        href="https://open-meteo.com/en/docs/air-quality-api"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-foreground"
+                      >
+                        Open-Meteo / CAMS
+                      </a>{" "}
+                      द्वारा क्षेत्रीय मॉडल्ड अनुमान; सड़क-स्तरीय ट्रैफ़िक प्रदूषण भिन्न हो सकता है।
+                    </>
+                  ) : (
+                    <>
+                      Regional modeled estimates via{" "}
+                      <a
+                        href="https://open-meteo.com/en/docs/air-quality-api"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-foreground"
+                      >
+                        Open-Meteo / CAMS
+                      </a>
+                      ; street-level traffic exposure can differ.
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -658,7 +684,11 @@ export function DashboardView() {
                   horizonHours={horizonHours}
                   onHorizonChange={setHorizonHours}
                   loading={refreshing}
-                  emptyMessage="Hourly forecast data is unavailable for this location."
+                  emptyMessage={
+                    locale === "hi"
+                      ? "इस स्थान के लिए प्रति-घंटा पूर्वानुमान डेटा अनुपलब्ध है।"
+                      : "Hourly forecast data is unavailable for this location."
+                  }
                   currentTimeIso={activeForecast.current.timestampIso}
                 />
 
@@ -755,18 +785,22 @@ export function DashboardView() {
                         )}
                       </p>
                       <p className="mt-0.5 text-xs text-foreground">
-                        Avg US AQI:{" "}
+                        {locale === "hi" ? "औसत US AQI: " : "Avg US AQI: "}
                         <span className="font-mono font-semibold">
                           {lowerWindow.bestWindow.averageUsAqi}
                         </span>
                         {lowerWindow.peakWindow ? (
                           <span className="text-muted-foreground">
                             {" "}
-                            vs. peak {lowerWindow.peakWindow.averageUsAqi} at{" "}
-                            {formatHourInTz(
-                              lowerWindow.peakWindow.startIso,
-                              activeForecast.location.timezone
-                            )}
+                            {locale === "hi"
+                              ? `बनाम शिखर ${lowerWindow.peakWindow.averageUsAqi} (${formatHourInTz(
+                                  lowerWindow.peakWindow.startIso,
+                                  activeForecast.location.timezone
+                                )})`
+                              : `vs. peak ${lowerWindow.peakWindow.averageUsAqi} at ${formatHourInTz(
+                                  lowerWindow.peakWindow.startIso,
+                                  activeForecast.location.timezone
+                                )}`}
                           </span>
                         ) : null}
                       </p>
@@ -868,9 +902,13 @@ export function DashboardView() {
                           }
                           className="text-[10px]"
                         >
-                          {item.priority === "protective"
-                            ? "Protective"
-                            : "Advisory"}
+                          {locale === "hi"
+                            ? item.priority === "protective"
+                              ? "सुरक्षात्मक"
+                              : "सलाह"
+                            : item.priority === "protective"
+                              ? "Protective"
+                              : "Advisory"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -919,6 +957,7 @@ export function DashboardView() {
                         locale === "hi" ? meta.descriptionHi : meta.descriptionEn
                       }
                       sparklineValues={series}
+                      locale={locale}
                     />
                   );
                 })}

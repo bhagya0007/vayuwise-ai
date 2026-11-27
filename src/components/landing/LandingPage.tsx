@@ -200,6 +200,7 @@ export function LandingPage() {
               smogLabel={landing.hero.smogLabel}
               cleanLabel={landing.hero.cleanLabel}
               previewBadge={landing.hero.previewBadge}
+              locale={locale}
             />
           </div>
         </section>

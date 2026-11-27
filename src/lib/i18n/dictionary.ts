@@ -319,7 +319,7 @@ export const APP_DICTIONARY: Record<Locale, AppDictionary> = {
         features: "Features",
         howItWorks: "How It Works",
         about: "Methodology",
-        launchAssistant: "Launch Assistant",
+        launchAssistant: "Get Started",
       },
       hero: {
         badge: "Urban Air Quality Assistant",
@@ -563,7 +563,7 @@ export const APP_DICTIONARY: Record<Locale, AppDictionary> = {
         features: "विशेषताएँ",
         howItWorks: "कैसे काम करता है",
         about: "पद्धति",
-        launchAssistant: "सहायक खोलें",
+        launchAssistant: "शुरू करें",
       },
       hero: {
         badge: "शहरी वायु गुणवत्ता सहायक",
