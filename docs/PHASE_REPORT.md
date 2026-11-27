@@ -891,3 +891,47 @@ Measured side-by-side on local production builds (`next start` on `127.0.0.1:309
 - Per-isolate in-memory rate limits and stale cache remain scoped to individual warm Node.js serverless isolates; multi-instance global coordination still relies on edge firewall rules (Vercel Firewall configuration documented in `README.md`).
 - Client CSP retains `'unsafe-inline'` for `script-src` and `style-src` for Next.js static hydration and Tailwind/Recharts inline styles while `'unsafe-eval'` remains disabled in production.
 - In standalone deployments behind a reverse proxy other than Vercel, operators must set `TRUST_PROXY_HEADERS=true` only when the proxy strips and overwrites client forwarding headers; otherwise all requests share the conservative untrusted-proxy bucket.
+
+---
+
+## Phase 12.3 — GitHub Actions CI Runtime Compatibility Fix
+
+- **Date:** 2026-11-28
+- **Failing CI Commit & Run:** `8f7d819e7e4108d8a8526722cbb39ac9b9b45ea2` (GitHub Actions run `46051950957`, job `140685175930`)
+- **Previous vs. Corrected Node.js Versions:** Local verification used Node.js `v26.13.1`, whereas `.github/workflows/ci.yml` specified `node-version: "20"` (`package.json` `engines.node: ">=20.0.0"`). Updated CI, `package.json`, `package-lock.json`, `.nvmrc`, and `README.md` to **Node.js `24` LTS** (`engines.node: "24.x"`), verified locally under SHA-256-checked Node.js **`v24.22.3`** (`npm 11.19.1`).
+- **Hosted CI Status:** **PENDING OWNER PUSH & HOSTED WORKFLOW EXECUTION** *(not pushed automatically; actual GitHub-hosted `ubuntu-latest` Actions run cannot be marked passing until pushed)*
+
+### 1. Confirmed Root Causes
+1. **Node.js 20 Runtime Incompatibility (`TypeError: Map.groupBy is not a function`):** Lockfile inspection confirmed `vitest@5.1.2` requires `^22.12.0 || ^24.0.0 || >=26.0.0` and `jsdom@31.0.1` requires `^22.22.2 || ^24.15.0 || >=26.0.0`. Both rely on ES2024 `Map.groupBy`, which is absent in Node 20 (`v20.x`). When Vitest's reporter summarized failures in CI on Node 20, `Map.groupBy` threw cleanly.
+2. **All `6` Failed Tests in `tests/unit/phase03.test.ts` Reproduced & Fixed:** Reproducing the CI environment locally (`GEMINI_AI_ENABLED="false"`, `TZ="UTC"`) produced the exact `Failed Tests 6` count inside `tests/unit/phase03.test.ts`:
+   1. `returns UNCONFIGURED gracefully when GEMINI_API_KEY is absent` (received `"AI_DISABLED"` because `.github/workflows/ci.yml` set `GEMINI_AI_ENABLED: "false"` at job level).
+   2. `validates structured Gemini response and performs bounded corrective retry on bad JSON` (`res.ok` returned `false` / `"AI_DISABLED"`).
+   3. `does not retry invalid API key (401/403) and redacts secrets from errors` (received `"AI_DISABLED"` instead of `"INVALID_API_KEY"`).
+   4. `handles quota exhaustion (429 RESOURCE_EXHAUSTED) without hanging` (received `"AI_DISABLED"` instead of `"QUOTA_EXCEEDED"`).
+   5. `POST /api/ai/chat rejects cross-origin, oversized payload, and unconfigured key truthfully` (received `"AI_DISABLED"` instead of `"UNCONFIGURED"`).
+   6. `falls back cleanly to a secondary Flash model when primary returns 503 UNAVAILABLE` (`res.ok` returned `false` / `"AI_DISABLED"`).
+   - **Root Cause:** `phase03.test.ts` stubbed `GEMINI_API_KEY` without resetting/stubbing `GEMINI_AI_ENABLED="true"` in `beforeEach`, leaking the external `GEMINI_AI_ENABLED="false"` job variable from CI into Gemini unit tests.
+
+### 2. Files Modified
+- [.github/workflows/ci.yml](file:///e:/VayuWise-AI/.github/workflows/ci.yml): Set `node-version: "24"` and added `node --version && npm --version` step before `npm ci`. Preserved `next typegen && tsc --noEmit` via `npm run typecheck`.
+- [package.json](file:///e:/VayuWise-AI/package.json): Standardized `engines.node` to `"24.x"`.
+- [package-lock.json](file:///e:/VayuWise-AI/package-lock.json): Synchronized root `engines.node` metadata to `"24.x"` via `npm install --package-lock-only` under Node `v24.22.3`.
+- [.nvmrc](file:///e:/VayuWise-AI/.nvmrc): Added pinning Node.js `24`.
+- [tests/unit/phase03.test.ts](file:///e:/VayuWise-AI/tests/unit/phase03.test.ts): Added `vi.stubEnv("GEMINI_AI_ENABLED", "true")` in `beforeEach` (still explicitly overridden to `"false"` inside the emergency kill-switch test).
+- [README.md](file:///e:/VayuWise-AI/README.md): Updated Local Setup and Vercel Deployment runtime instructions to Node.js `24` LTS / `.nvmrc`.
+
+### 3. Node.js `v24.22.3` Verification Results (Clean Isolated Workspace, `GEMINI_AI_ENABLED=false`, `TZ=UTC`, No `.env*`)
+- `npm ci`: **PASSED** (`689` packages, `0` vulnerabilities).
+- `npm run typecheck`: **PASSED** (`next typegen && tsc --noEmit`, `0` errors).
+- `npm run lint`: **PASSED** (`0` errors, `0` warnings).
+- `npm run test`: **PASSED** (`16` files, **`123/123` tests**, including all `10/10` tests in `tests/unit/phase03.test.ts`).
+- `npx vitest run --coverage`: **PASSED** — **`83.29%` statements (`2249/2700`), `66.72%` branches (`2210/3312`), `67.25%` functions (`499/742`), `85.56%` lines (`2163/2528`)**; Critical Core: **`95.41%` statements (`957/1003`), `82.22%` branches (`957/1164`)**.
+- `npm run build`: **PASSED** (`25/25` routes, without `GEMINI_API_KEY`).
+- `npm run test:e2e`: **PASSED** (`32/32` Playwright Chromium tests — **`155/155` combined automated tests**).
+- `npm audit --omit=dev`: **`0` vulnerabilities**.
+- **Local Workspace Live Integration (`next start` on Node `v24.22.3`):** `GET /api/health` (`200`), Open-Meteo `/api/air-quality` (`200`, `modeled`, `usAqi: 233`, `48` hours) & `/api/locations/search` (`200`, `"Jaipur"`), all `6` Gemini endpoints (`200`, `aiGenerated: true`), Profile persistence (`"3"` across reload), `48h` toggle, Impact units, Community, Report, `/manifest.webmanifest` (`200`), and `/sw.js` (`200`) passed.
+
+### 4. Remaining Limitations & Manual Owner Tasks
+- **OS Parity Limitation:** Host machine runs Windows 11 without WSL (`wsl.exe` reported no installed Linux distro), so native Linux Ubuntu runner execution was emulated via isolated Node `v24.22.3` execution with `TZ=UTC` and `GEMINI_AI_ENABLED=false`; **hosted GitHub Actions `ubuntu-latest` execution must still be confirmed after pushing**.
+- **Raw CI Log Access:** Direct log download from GitHub REST API (`jobs/140685175930/logs`) returned HTTP `403` without an interactive browser/CLI token, though reproducing CI env vars (`GEMINI_AI_ENABLED=false`, `TZ=UTC`) locally replicated the exact `6` failures in `tests/unit/phase03.test.ts`.
+- **Manual Owner Tasks:** Review `git status` and `git diff`, commit and push to `origin/main`, confirm GitHub Actions **CI Verification** turns green on Node `24`, and verify the updated Vercel deployment before final PromptWars submission.

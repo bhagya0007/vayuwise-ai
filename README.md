@@ -68,8 +68,9 @@ flowchart LR
 
 ## Local Setup & Environment Variables
 
-1. Install dependencies:
+1. Ensure **Node.js 24 LTS** (pinned in `.nvmrc` and `package.json` `engines.node: "24.x"`) and install dependencies:
    ```bash
+   nvm use   # selects Node 24 from .nvmrc (optional)
    npm install
    ```
 2. Copy `.env.example` to `.env.local` and configure:
@@ -113,7 +114,7 @@ flowchart LR
 ## Deployment Instructions (Vercel / Node.js)
 
 1. Push the repository to GitHub (verifying `.env.local` is excluded).
-2. Import the repository into Vercel (`Node >= 20`, Framework Preset: `Next.js`).
+2. Import the repository into Vercel (`Node 24.x`, Framework Preset: `Next.js`).
 3. Set Environment Variables in Vercel Project Settings:
    - `GEMINI_API_KEY` = *your private Google AI Studio key (server-only)*
    - `GEMINI_MODEL` = `gemini-3.1-flash-lite`

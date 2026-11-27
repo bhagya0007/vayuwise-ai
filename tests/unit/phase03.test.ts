@@ -16,6 +16,7 @@ const NEW_DELHI = DEMO_LOCATIONS[0];
 beforeEach(() => {
   clearMemoryCacheForTests();
   vi.unstubAllEnvs();
+  vi.stubEnv("GEMINI_AI_ENABLED", "true");
   vi.restoreAllMocks();
 });
 
